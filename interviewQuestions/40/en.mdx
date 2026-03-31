@@ -1,0 +1,64 @@
+---
+meta:
+    title: 'What is the difference between threading and multiprocessing in Python?'
+    description: 'threading is better suited for I/O bounds tasks, while multiprocessing is used for CPU-bound computation. Learn about the GIL and choosing the right concurrency model in Python.'
+---
+
+## Multithreading (threading):
+
+Threads operate within a **single process** and share the same memory space:
+
+```python
+import threading
+
+def download(url):
+    print(f"Downloading {url}")
+
+threads = []
+for url in ["url1", "url2", "url3"]:
+    t = threading.Thread(target=download, args=(url,))
+    threads.append(t)
+    t.start()
+
+for t in threads:
+    t.join()  # Wait for all threads to finish
+```
+
+## Multiprocessing (multiprocessing):
+
+Each process gets its **own memory space** and its own **Python interpreter**:
+
+```python
+from multiprocessing import Process
+
+def heavy_computation(n):
+    return sum(i * i for i in range(n))
+
+processes = []
+for n in [10_000_000, 20_000_000]:
+    p = Process(target=heavy_computation, args=(n,))
+    processes.append(p)
+    p.start()
+
+for p in processes:
+    p.join()
+```
+
+## The GIL (Global Interpreter Lock):
+
+The GIL is a CPython mechanism that allows **only one thread** to execute Python bytecode at a time. As a result:
+
+-   Threads **do not speed up** tasks performing heavy calculations (CPU-bound tasks).
+-   Threads **do speed up** tasks waiting on external events (I/O-bound tasks): network requests, reading files.
+
+## When to use which:
+
+-   **threading** — for I/O-bound tasks: file downloads, API calls, database queries.
+-   **multiprocessing** — for CPU-bound tasks: data processing, complex mathematical calculations, and algorithms.
+
+| Feature            | threading     | multiprocessing   |
+|--------------------|---------------|-------------------|
+| Memory             | Shared        | Separate          |
+| GIL impact         | Constrained   | Unaffected        |
+| Overhead           | Low           | High              |
+| Best used for      | I/O-bound     | CPU-bound         |

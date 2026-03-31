@@ -1,0 +1,63 @@
+---
+meta:
+    title: 'What are abstract classes and why are they needed?'
+    description: 'Abstract classes define an interface via @abstractmethod. Learn about the abc module and creating abstract classes in Python.'
+---
+
+> An **abstract class** is a class that cannot be instantiated directly. It defines an interface (a set of mandatory methods) for its child classes.
+
+## The abc module:
+
+```python
+from abc import ABC, abstractmethod
+
+class Shape(ABC):
+    @abstractmethod
+    def area(self):
+        """Calculate the area of the shape"""
+        pass
+
+    @abstractmethod
+    def perimeter(self):
+        """Calculate the perimeter of the shape"""
+        pass
+
+# shape = Shape()  # TypeError: Can't instantiate abstract class Create
+```
+
+## Implementing an abstract class:
+
+```python
+class Rectangle(Shape):
+    def __init__(self, width, height):
+        self.width = width
+        self.height = height
+
+    def area(self):
+        return self.width * self.height
+
+    def perimeter(self):
+        return 2 * (self.width + self.height)
+
+class Circle(Shape):
+    def __init__(self, radius):
+        self.radius = radius
+
+    def area(self):
+        import math
+        return math.pi * self.radius ** 2
+
+    def perimeter(self):
+        import math
+        return 2 * math.pi * self.radius
+
+rect = Rectangle(5, 3)
+print(rect.area())       # 15
+print(rect.perimeter())  # 16
+```
+
+## Why they are needed:
+
+-   **Contract**: they guarantee that any child class implements all the required methods.
+-   **Documentation**: they clearly show what methods must be implemented.
+-   **Early error detection**: if an abstract method is missing in the child class, Python will raise a `TypeError` at instantiation, rather than failing later when the method is called.

@@ -1,0 +1,46 @@
+---
+meta:
+    title: 'How do indexing and slicing work in Python?'
+    description: 'Indexing accesses elements by position, slicing extracts parts of a sequence. Learn the [start:stop:step] syntax in Python.'
+---
+
+## Indexing:
+
+-   Elements are numbered starting from `0`.
+-   Negative indices count from the end: `-1` is the last element.
+
+```python
+text = "Python"
+text[0]    # 'P'
+text[-1]   # 'n'
+text[-2]   # 'o'
+```
+
+## Slicing:
+
+Syntax: `[start:stop:step]`
+
+-   `start` — starting index (inclusive), defaults to `0`.
+-   `stop` — ending index (exclusive), defaults to the length of the sequence.
+-   `step` — step size, defaults to `1`.
+
+```python
+nums = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+nums[2:5]     # [2, 3, 4]
+nums[:3]      # [0, 1, 2]
+nums[7:]      # [7, 8, 9]
+nums[::2]     # [0, 2, 4, 6, 8]  — every second
+nums[::-1]    # [9, 8, 7, 6, 5, 4, 3, 2, 1, 0]  — reverse
+```
+
+## Slicing works with strings and tuples:
+
+```python
+text = "Hello, World!"
+text[7:12]    # 'World'
+text[::-1]    # '!dlroW ,olleH'
+
+coords = (10, 20, 30, 40, 50)
+coords[1:4]   # (20, 30, 40)
+```

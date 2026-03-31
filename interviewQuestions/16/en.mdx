@@ -1,0 +1,49 @@
+---
+meta:
+    title: 'What are generators and how do they differ from lists?'
+    description: 'Generators use yield for lazy evaluation and save memory. Learn the difference between generators and lists in Python.'
+---
+
+> A **generator** is a function that returns items one by one using `yield`, rather than creating the entire list in memory all at once.
+
+## Generator function:
+
+```python
+def count_up_to(n):
+    i = 1
+    while i <= n:
+        yield i
+        i += 1
+
+for num in count_up_to(5):
+    print(num)  # 1, 2, 3, 4, 5
+```
+
+## Generator expression:
+
+Similar to a list comprehension, but uses parentheses:
+
+```python
+# List comprehension — creates the whole list in memory
+squares_list = [x ** 2 for x in range(1000000)]
+
+# Generator expression — evaluates one by one
+squares_gen = (x ** 2 for x in range(1000000))
+```
+
+## Key differences from a list:
+
+-   **Memory**: a generator only stores the current item, not the entire collection.
+-   **Single use**: a generator can be iterated over only once.
+-   **Laziness**: items are evaluated on demand, not in advance.
+
+```python
+gen = (x for x in range(3))
+print(list(gen))  # [0, 1, 2]
+print(list(gen))  # [] — already exhausted
+```
+
+## When to use:
+
+-   **Generator** — when working with large datasets, streams, or when there is no need to keep all items.
+-   **List** — when multiple access, indexing is required, or the dataset is known to be small.

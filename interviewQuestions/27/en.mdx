@@ -1,0 +1,54 @@
+---
+meta:
+    title: 'What are static and class methods?'
+    description: 'Static methods (@staticmethod) do not depend on the instance, class methods (@classmethod) receive the class as the first argument. A comparison in Python.'
+---
+
+## Regular method (instance method):
+
+Receives a reference to the instance (`self`) as its first argument:
+
+```python
+class MyClass:
+    def instance_method(self):
+        return f"Called for {self}"
+```
+
+## @classmethod — a method of the class:
+
+Receives a reference to the **class** (`cls`) instead of an instance:
+
+```python
+class User:
+    def __init__(self, name, age):
+        self.name = name
+        self.age = age
+
+    @classmethod
+    def from_string(cls, data_string):
+        name, age = data_string.split(",")
+        return cls(name, int(age))
+
+# Alternative constructor
+user = User.from_string("Anna,25")
+print(user.name)  # Anna
+```
+
+## @staticmethod — a static method:
+
+Receives neither `self` nor `cls`. It behaves like a regular function placed inside a class namespace:
+
+```python
+class MathUtils:
+    @staticmethod
+    def is_even(n):
+        return n % 2 == 0
+
+print(MathUtils.is_even(4))  # True
+```
+
+## When to use which:
+
+-   **Instance method** — when you need access to the object's attributes (`self`).
+-   **@classmethod** — for alternative constructors or when modifying class attributes.
+-   **@staticmethod** — for utility functions that logically belong to the class but do not need access to the instance or the class.

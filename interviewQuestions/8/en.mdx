@@ -1,0 +1,47 @@
+---
+meta:
+    title: 'What are f-strings and how do they compare to other formatting methods?'
+    description: 'f-strings are the most convenient way to format strings in Python. Comparison of f-string, .format(), and % operator for value interpolation.'
+---
+
+Python offers several ways to format strings:
+
+## f-strings — recommended approach:
+
+Available since Python 3.6. Allow embedding expressions directly in the string.
+
+```python
+name = "Anna"
+age = 25
+print(f"Hello, {name}! You are {age} years old.")
+print(f"In 5 years you will be {age + 5}.")
+print(f"Name in uppercase: {name.upper()}")
+```
+
+## .format() method:
+
+```python
+print("Hello, {}! You are {} years old.".format(name, age))
+print("Hello, {0}! {0}, you are {1} years old.".format(name, age))
+```
+
+## % operator (legacy):
+
+```python
+print("Hello, %s! You are %d years old." % (name, age))
+```
+
+## Comparison:
+
+-   **f-strings** — the most readable and fastest method. Supports any expressions.
+-   **.format()** — useful when the string template is defined in advance.
+-   **%** — legacy approach, found in older code.
+
+## Number formatting:
+
+```python
+pi = 3.14159265
+print(f"Pi: {pi:.2f}")          # Pi: 3.14
+print(f"Number: {1000000:,}")   # Number: 1,000,000
+print(f"Percent: {0.856:.1%}")  # Percent: 85.6%
+```

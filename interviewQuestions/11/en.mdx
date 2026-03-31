@@ -1,0 +1,60 @@
+---
+meta:
+    title: 'What is a function in Python and how do you define it?'
+    description: 'A function is a named block of code defined using def. Learn about parameters, return values, and default arguments.'
+---
+
+> A **function** is a named block of code that can be called multiple times. Functions help avoid duplication and make the code more readable.
+
+## Definition and calling:
+
+```python
+def greet(name):
+    return f"Hello, {name}!"
+
+message = greet("Anna")
+print(message)  # Hello, Anna!
+```
+
+## Parameters and arguments:
+
+```python
+# Default values
+def power(base, exponent=2):
+    return base ** exponent
+
+power(3)     # 9  (exponent = 2)
+power(3, 3)  # 27 (exponent = 3)
+```
+
+## Keyword arguments:
+
+```python
+def create_user(name, age, city="Moscow"):
+    return {"name": name, "age": age, "city": city}
+
+# Keyword arguments can be passed in any order
+user = create_user(age=25, name="Anna")
+```
+
+## Returning multiple values:
+
+```python
+def min_max(numbers):
+    return min(numbers), max(numbers)
+
+lo, hi = min_max([3, 1, 7, 2, 9])
+print(lo, hi)  # 1 9
+```
+
+## Function without return:
+
+If `return` is absent, the function returns `None`:
+
+```python
+def say_hello(name):
+    print(f"Hello, {name}!")
+
+result = say_hello("World")
+print(result)  # None
+```

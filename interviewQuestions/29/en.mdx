@@ -1,0 +1,70 @@
+---
+meta:
+    title: 'What are decorators and how do they work?'
+    description: 'A decorator is a function that wraps another function to add behavior. Learn about creating decorators and @wraps in Python.'
+---
+
+> A **decorator** is a function that takes another function and returns a new one, extending its behavior without modifying the original code.
+
+## A simple decorator:
+
+```python
+def log_call(func):
+    def wrapper(*args, **kwargs):
+        print(f"Calling function: {func.__name__}")
+        result = func(*args, **kwargs)
+        print(f"Result: {result}")
+        return result
+    return wrapper
+
+@log_call
+def add(a, b):
+    return a + b
+
+add(3, 5)
+# Calling function: add
+# Result: 8
+```
+
+## How it works under the hood:
+
+```python
+# Using @decorator syntax
+@log_call
+def add(a, b):
+    return a + b
+
+# Is equivalent to:
+def add(a, b):
+    return a + b
+add = log_call(add)
+```
+
+## Preserving metadata (@wraps):
+
+```python
+from functools import wraps
+
+def log_call(func):
+    @wraps(func)  # Keeps the original name and docstring
+    def wrapper(*args, **kwargs):
+        print(f"Calling: {func.__name__}")
+        return func(*args, **kwargs)
+    return wrapper
+
+@log_call
+def add(a, b):
+    """Adds two numbers."""
+    return a + b
+
+print(add.__name__)  # add (without @wraps it would be 'wrapper')
+print(add.__doc__)   # Adds two numbers.
+```
+
+## Practical examples of decorators:
+
+-   Logging function calls
+-   Measuring execution time
+-   Caching results
+-   Access control/authentication
+-   Input validation

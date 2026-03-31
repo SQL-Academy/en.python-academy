@@ -1,0 +1,38 @@
+---
+meta:
+    title: 'What are the basic data types in Python?'
+    description: 'Basic data types in Python: int, float, str, bool, and None. Learn their features and type conversion methods.'
+---
+
+Python provides several built-in data types:
+
+## Numeric types:
+
+-   `int` — integers of arbitrary precision: `42`, `-7`, `1_000_000`
+-   `float` — floating-point numbers: `3.14`, `-0.5`, `1e10`
+-   `complex` — complex numbers: `3+4j`
+
+## Text type:
+
+-   `str` — character string: `"Hello"`, `'Python'`
+
+## Boolean type:
+
+-   `bool` — takes values `True` or `False`
+
+## Special type:
+
+-   `NoneType` — the single value `None`, meaning the absence of a value
+
+## Type conversion:
+
+```python
+# Explicit type conversion
+x = int("42")       # str → int
+y = float(42)       # int → float
+z = str(3.14)       # float → str
+w = bool(0)          # int → bool (False)
+
+# Type checking
+print(type(x))  # <class 'int'>
+```

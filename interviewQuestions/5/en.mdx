@@ -1,0 +1,49 @@
+---
+meta:
+    title: 'What is a dictionary (dict) and how does it work?'
+    description: 'A dictionary in Python is a key-value collection based on a hash table with O(1) access. Learn about main dict methods and features.'
+---
+
+> **Dictionary (dict)** is a mutable collection of key-value pairs implemented using a hash table.
+
+## Key characteristics:
+
+-   Access, insertion, and deletion are performed in **O(1)** on average.
+-   Keys must be **hashable** (strings, numbers, tuples).
+-   Since Python 3.7, dictionaries **preserve insertion order**.
+
+```python
+user = {
+    "name": "Anna",
+    "age": 25,
+    "city": "Moscow"
+}
+```
+
+## Main methods:
+
+```python
+user["name"]              # Access by key (KeyError if missing)
+user.get("email", "—")    # Safe access with default value
+
+user.keys()               # All keys
+user.values()             # All values
+user.items()              # Key-value pairs
+
+user.pop("city")          # Remove and return value
+user.update({"age": 26})  # Update values
+```
+
+## Creating a dictionary:
+
+```python
+# Literal
+d1 = {"a": 1, "b": 2}
+
+# From a list of tuples
+d2 = dict([("a", 1), ("b", 2)])
+
+# Using dict comprehension
+d3 = {x: x ** 2 for x in range(5)}
+# {0: 0, 1: 1, 2: 4, 3: 9, 4: 16}
+```

@@ -1,0 +1,64 @@
+---
+meta:
+    title: 'What are variable scopes in Python?'
+    description: 'Scopes in Python are determined by the LEGB rule: Local, Enclosing, Global, Built-in. Learn about the global and nonlocal keywords.'
+---
+
+> In Python, scope determines where a variable is accessible. Python uses the **LEGB** rule for resolving variable names.
+
+## The LEGB Rule:
+
+-   **L — Local**: variables inside the current function.
+-   **E — Enclosing**: variables in the outer (enclosing) function.
+-   **G — Global**: variables at the module level.
+-   **B — Built-in**: Python's built-in names (`print`, `len`, `range`).
+
+```python
+x = "global"  # Global
+
+def outer():
+    x = "enclosing"  # Enclosing
+
+    def inner():
+        x = "local"  # Local
+        print(x)  # "local"
+
+    inner()
+
+outer()
+```
+
+## The global keyword:
+
+Allows modifying a global variable inside a function:
+
+```python
+counter = 0
+
+def increment():
+    global counter
+    counter += 1
+
+increment()
+print(counter)  # 1
+```
+
+## The nonlocal keyword:
+
+Allows modifying a variable from an outer (enclosing) function:
+
+```python
+def outer():
+    count = 0
+
+    def inner():
+        nonlocal count
+        count += 1
+        return count
+
+    return inner
+
+counter = outer()
+print(counter())  # 1
+print(counter())  # 2
+```

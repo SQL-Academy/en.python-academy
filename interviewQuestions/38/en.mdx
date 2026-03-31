@@ -1,0 +1,47 @@
+---
+meta:
+    title: 'How does memory management work in Python?'
+    description: 'Python manages memory using reference counting and a garbage collector. Learn how Python automatically frees unused memory.'
+---
+
+> Python automatically handles memory management, relieving developers of manual memory allocation and deallocation.
+
+## Reference Counting:
+
+Every object keeps track of its **reference count** — the number of variables pointing to it. When the count reaches **zero**, the object is deleted:
+
+```python
+import sys
+
+a = [1, 2, 3]
+print(sys.getrefcount(a))  # 2 (a + the function parameter itself)
+
+b = a  # Another reference
+print(sys.getrefcount(a))  # 3
+
+del b  # Remove a reference
+print(sys.getrefcount(a))  # 2
+```
+
+## Garbage Collector:
+
+Reference counting fails when there are **circular references**:
+
+```python
+# Circular reference
+a = []
+b = []
+a.append(b)
+b.append(a)
+del a, b
+# The reference count won't reach zero, but the objects are unreachable
+```
+
+To solve this, Python runs a **Garbage Collector** (the `gc` module) that discovers and cleans up such cycles.
+
+## Key takeaways:
+
+-   **Reference counting** is the primary mechanism and runs immediately.
+-   **Garbage collector** is a secondary mechanism designed to break circular references.
+-   **del** removes a reference to an object, not necessarily the object itself.
+-   Developers rarely need to get involved in memory management — Python handles it perfectly.

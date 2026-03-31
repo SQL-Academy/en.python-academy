@@ -1,0 +1,58 @@
+---
+meta:
+    title: 'What are classes and objects in Python?'
+    description: 'A class is a blueprint for creating objects. Learn about __init__, self, instance attributes, and class attributes in Python.'
+---
+
+> A **class** is a template (blueprint) for creating objects. An **object** is a specific instance of a class.
+
+## Defining a class:
+
+```python
+class Dog:
+    # Class attribute (shared by all instances)
+    species = "Canis familiaris"
+
+    # Constructor — gets called when creating an object
+    def __init__(self, name, age):
+        # Instance attributes (unique to each object)
+        self.name = name
+        self.age = age
+
+    # Instance method
+    def bark(self):
+        return f"{self.name} says: Woof!"
+```
+
+## Creating objects:
+
+```python
+dog1 = Dog("Bobik", 3)
+dog2 = Dog("Sharik", 5)
+
+print(dog1.name)      # Bobik
+print(dog2.bark())    # Sharik says: Woof!
+print(dog1.species)   # Canis familiaris
+```
+
+## self:
+
+-   `self` is a reference to the current instance of the class.
+-   It is passed automatically when a method is called.
+-   Through `self`, you can access the object's attributes and methods.
+
+## Class attributes vs instance attributes:
+
+```python
+class Counter:
+    count = 0  # Class attribute — shared by all
+
+    def __init__(self):
+        Counter.count += 1  # Modify the class attribute
+        self.id = Counter.count  # Instance attribute
+
+c1 = Counter()
+c2 = Counter()
+print(Counter.count)  # 2
+print(c1.id, c2.id)   # 1 2
+```

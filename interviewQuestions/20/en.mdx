@@ -1,0 +1,58 @@
+---
+meta:
+    title: 'How to create a custom exception?'
+    description: 'Custom exceptions are created by inheriting from Exception. Learn how and when to create your own exceptions in Python.'
+---
+
+> Custom exceptions are created by inheriting from the `Exception` class (or its subclasses).
+
+## Simple custom exception:
+
+```python
+class InsufficientFundsError(Exception):
+    pass
+
+def withdraw(balance, amount):
+    if amount > balance:
+        raise InsufficientFundsError("Insufficient funds")
+    return balance - amount
+
+try:
+    withdraw(100, 200)
+except InsufficientFundsError as e:
+    print(e)  # Insufficient funds
+```
+
+## Exception with additional data:
+
+```python
+class ValidationError(Exception):
+    def __init__(self, field, message):
+        self.field = field
+        self.message = message
+        super().__init__(f"{field}: {message}")
+
+try:
+    raise ValidationError("email", "Invalid format")
+except ValidationError as e:
+    print(e.field)    # email
+    print(e.message)  # Invalid format
+```
+
+## When to create custom exceptions:
+
+-   When built-in exceptions don't describe the error accurately enough.
+-   To separate business logic errors (e.g., `UserNotFoundError`, `PermissionDeniedError`).
+-   To easily catch a group of related errors using a common base class.
+
+```python
+class AppError(Exception):
+    """Base application exception"""
+    pass
+
+class NotFoundError(AppError):
+    pass
+
+class AccessDeniedError(AppError):
+    pass
+```

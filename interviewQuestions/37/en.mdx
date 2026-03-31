@@ -1,0 +1,62 @@
+---
+meta:
+    title: 'What is the difference between is and ==?'
+    description: 'The == operator compares values, while is checks object identity in memory. Learn about caching small numbers and the proper usage in Python.'
+---
+
+## == (value comparison):
+
+Checks whether the **values match** between two objects:
+
+```python
+a = [1, 2, 3]
+b = [1, 2, 3]
+
+print(a == b)  # True — values are the same
+```
+
+## is (identity comparison):
+
+Checks whether two variables point to the **exact same object** in memory:
+
+```python
+a = [1, 2, 3]
+b = [1, 2, 3]
+
+print(a is b)  # False — they are different objects
+print(id(a), id(b))  # Different memory addresses
+
+c = a
+print(a is c)  # True — c points to the same object
+```
+
+## Caching of small integers:
+
+Python caches integers from **-5 to 256**, so:
+
+```python
+x = 100
+y = 100
+print(x is y)  # True — cached object
+
+x = 1000
+y = 1000
+print(x is y)  # False — different objects
+```
+
+## Rules of usage:
+
+-   Use `is` only for comparison against `None`:
+
+```python
+# Correct
+if value is None:
+    print("No value")
+
+# Incorrect
+if value == None:
+    print("No value")
+```
+
+-   When comparing values, **always** use `==`.
+-   `is` only checks the `id()` of the objects — this is useful mostly for singletons like `None`, `True`, or `False`.

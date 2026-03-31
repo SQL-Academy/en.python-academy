@@ -1,0 +1,58 @@
+---
+meta:
+    title: 'How to read and write files in Python?'
+    description: 'To work with files in Python, use the open() function with different modes. Learn about reading, writing, encodings, and the with statement.'
+---
+
+## Opening a file:
+
+The `open()` function takes the path to the file and a mode:
+
+-   `'r'` — read (default)
+-   `'w'` — write (overwrites the file)
+-   `'a'` — append (adds to the end of the file)
+-   `'rb'` / `'wb'` — read / write in binary mode
+
+## Reading a file:
+
+```python
+# Read the entire file
+with open("data.txt", "r", encoding="utf-8") as f:
+    content = f.read()
+
+# Read line by line
+with open("data.txt", "r", encoding="utf-8") as f:
+    for line in f:
+        print(line.strip())
+
+# Read all lines into a list
+with open("data.txt", "r", encoding="utf-8") as f:
+    lines = f.readlines()
+```
+
+## Writing to a file:
+
+```python
+# Overwrite the file
+with open("output.txt", "w", encoding="utf-8") as f:
+    f.write("First line\n")
+    f.write("Second line\n")
+
+# Append to the end
+with open("output.txt", "a", encoding="utf-8") as f:
+    f.write("Another line\n")
+```
+
+## Encodings:
+
+Always specify `encoding="utf-8"` to avoid issues with special characters and non-Latin alphabets:
+
+```python
+# Without specifying encoding, a UnicodeDecodeError might occur
+with open("data.txt", "r", encoding="utf-8") as f:
+    content = f.read()
+```
+
+## Important:
+
+Always use the `with` statement — it ensures the file is properly closed even if an error occurs.

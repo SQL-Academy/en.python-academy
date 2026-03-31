@@ -1,0 +1,58 @@
+---
+meta:
+    title: 'What are mutable and immutable data types?'
+    description: 'Mutable types (list, dict, set) can be changed after creation, immutable (int, str, tuple) cannot. Learn why this matters in Python.'
+---
+
+> In Python, all objects are divided into **mutable** and **immutable** depending on whether their contents can be changed after creation.
+
+## Immutable:
+
+-   `int`, `float`, `bool`
+-   `str`
+-   `tuple`
+-   `frozenset`
+
+When "modified," a new object is created:
+
+```python
+x = 10
+print(id(x))  # e.g.: 140234866357520
+x += 1
+print(id(x))  # Different id — this is a new object
+```
+
+## Mutable:
+
+-   `list`
+-   `dict`
+-   `set`
+
+The object is modified "in place":
+
+```python
+lst = [1, 2, 3]
+print(id(lst))  # e.g.: 140234866400064
+lst.append(4)
+print(id(lst))  # Same id — object was modified
+```
+
+## Why this matters:
+
+-   **Dictionary keys** can only be immutable objects.
+-   **Passing to functions**: mutable objects can be changed inside a function, which may cause unexpected side effects.
+-   **Default values**: don't use mutable objects as default values in functions.
+
+```python
+# Common mistake
+def add_item(item, lst=[]):  # Same list across all calls!
+    lst.append(item)
+    return lst
+
+# Correct approach
+def add_item(item, lst=None):
+    if lst is None:
+        lst = []
+    lst.append(item)
+    return lst
+```

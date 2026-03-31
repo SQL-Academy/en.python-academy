@@ -1,0 +1,60 @@
+---
+meta:
+    title: 'What is encapsulation in Python?'
+    description: 'Encapsulation restricts access to an object.s internal data. Learn about naming conventions _, __, name mangling, and @property in Python.'
+---
+
+> **Encapsulation** is an OOP principle where an object's internal data is hidden from direct outside access.
+
+## Naming conventions:
+
+In Python, there are no strict access modifiers (`private`, `public`). Instead, conventions are used:
+
+-   `name` — public attribute, accessible to everyone.
+-   `_name` — "protected" (by convention), intended for internal use only.
+-   `__name` — "private", Python applies **name mangling** (changing the name).
+
+```python
+class BankAccount:
+    def __init__(self, balance):
+        self.__balance = balance  # "Private" attribute
+
+    def get_balance(self):
+        return self.__balance
+
+account = BankAccount(1000)
+# print(account.__balance)  # AttributeError
+print(account.get_balance())  # 1000
+
+# Name mangling — the attribute is accessible via the modified name
+print(account._BankAccount__balance)  # 1000
+```
+
+## @property — controlled access:
+
+Allows using methods as if they were attributes:
+
+```python
+class Temperature:
+    def __init__(self, celsius):
+        self._celsius = celsius
+
+    @property
+    def celsius(self):
+        return self._celsius
+
+    @celsius.setter
+    def celsius(self, value):
+        if value < -273.15:
+            raise ValueError("Below absolute zero!")
+        self._celsius = value
+
+    @property
+    def fahrenheit(self):
+        return self._celsius * 9 / 5 + 32
+
+temp = Temperature(25)
+print(temp.celsius)     # 25
+print(temp.fahrenheit)  # 77.0
+temp.celsius = 30       # Uses the setter
+```

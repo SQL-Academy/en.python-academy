@@ -1,0 +1,47 @@
+---
+meta:
+    title: 'What is the difference between set and frozenset?'
+    description: 'set is a mutable collection of unique elements, frozenset is immutable. Learn about set operations and key differences in Python.'
+---
+
+## set:
+
+-   A **mutable** unordered collection of unique elements.
+-   Supports adding and removing elements.
+-   Cannot be used as a dictionary key or element of another set.
+
+```python
+colors = {"red", "green", "blue"}
+colors.add("yellow")
+colors.discard("red")
+```
+
+## frozenset:
+
+-   An **immutable** version of a set.
+-   Does not support adding or removing elements.
+-   Is hashable — can be used as a dictionary key.
+
+```python
+immutable_set = frozenset([1, 2, 3])
+# immutable_set.add(4)  # AttributeError
+
+# frozenset as a dictionary key
+cache = {frozenset([1, 2]): "result"}
+```
+
+## Common set operations:
+
+```python
+a = {1, 2, 3, 4}
+b = {3, 4, 5, 6}
+
+a | b   # Union: {1, 2, 3, 4, 5, 6}
+a & b   # Intersection: {3, 4}
+a - b   # Difference: {1, 2}
+a ^ b   # Symmetric difference: {1, 2, 5, 6}
+```
+
+## In practice:
+
+`set` is used for fast deduplication and membership checks (`in` runs in O(1)). `frozenset` is needed when a set must serve as a dictionary key or an element of another set.

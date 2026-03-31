@@ -1,0 +1,58 @@
+---
+meta:
+    title: 'What kind of loops exist in Python and how do they differ?'
+    description: 'Python has for and while loops. Learn about break, continue, the else clause in loops, and the range() function.'
+---
+
+## for loop:
+
+Iterates over the elements of an **iterable object** (list, string, range, etc.):
+
+```python
+fruits = ["apple", "banana", "cherry"]
+for fruit in fruits:
+    print(fruit)
+
+# Loop over a range of numbers
+for i in range(5):
+    print(i)  # 0, 1, 2, 3, 4
+```
+
+## while loop:
+
+Executes **as long as the condition is true**:
+
+```python
+count = 0
+while count < 3:
+    print(count)
+    count += 1
+```
+
+## Control statements:
+
+-   `break` — terminates the loop.
+-   `continue` — skips to the next iteration.
+
+```python
+for i in range(10):
+    if i == 3:
+        continue  # Skips 3
+    if i == 7:
+        break     # Stops the loop at 7
+    print(i)      # 0, 1, 2, 4, 5, 6
+```
+
+## else block in a loop:
+
+Executes if the loop completes **without** encountering a `break`:
+
+```python
+for n in range(2, 10):
+    for x in range(2, n):
+        if n % x == 0:
+            break
+    else:
+        # Executes if break was not triggered
+        print(f"{n} is a prime number")
+```

@@ -1,0 +1,63 @@
+---
+meta:
+    title: 'What are type annotations in Python?'
+    description: 'Type annotations specify expected data types. Learn syntax, the typing module, and why type annotations are used in Python.'
+---
+
+> **Type annotations** are a way to declare the expected types for function arguments, return values, and variables. They do **not affect** the runtime behavior of the program but serve as helpful aids during development.
+
+## Basic syntax:
+
+```python
+def greet(name: str) -> str:
+    return f"Hello, {name}!"
+
+age: int = 25
+price: float = 19.99
+is_active: bool = True
+```
+
+## Collections:
+
+```python
+# Python 3.9+
+def process(items: list[str]) -> dict[str, int]:
+    return {item: len(item) for item in items}
+
+# Nested types
+matrix: list[list[int]] = [[1, 2], [3, 4]]
+```
+
+## The typing module:
+
+```python
+from typing import Optional, Union
+
+# Can be str or None
+def find_user(user_id: int) -> Optional[str]:
+    if user_id == 1:
+        return "Anna"
+    return None
+
+# Can be int or str
+def parse(value: Union[int, str]) -> str:
+    return str(value)
+```
+
+## Why use annotations:
+
+-   **Documentation**: the expected types are clear without reading the function body.
+-   **IDEs**: autocomplete and code suggestions work better.
+-   **Static analysis**: tools like `mypy` can catch type errors prior to running code.
+-   **Collaboration**: makes the codebase easier for other developers to understand.
+
+## Important note:
+
+Annotations are merely **hints**, not strict enforcements. Python **does not** enforce types at runtime:
+
+```python
+def add(a: int, b: int) -> int:
+    return a + b
+
+add("hello", " world")  # Will run without error yielding: "hello world"
+```

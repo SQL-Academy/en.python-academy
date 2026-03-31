@@ -1,0 +1,65 @@
+---
+meta:
+    title: 'How does importing modules work in Python?'
+    description: 'Modules in Python are imported via import and from...import. Learn about packages, aliases, and the __name__ == "__main__" construct.'
+---
+
+> A **module** is a file with a `.py` extension containing Python code (functions, classes, variables). Modules help organize and reuse code.
+
+## Ways to import:
+
+```python
+# Importing an entire module
+import math
+print(math.sqrt(16))  # 4.0
+
+# Importing specific objects
+from math import sqrt, pi
+print(sqrt(16))  # 4.0
+
+# Importing with an alias
+import datetime as dt
+now = dt.datetime.now()
+```
+
+## Creating your own module:
+
+```python
+# utils.py
+def greet(name):
+    return f"Hello, {name}!"
+
+# main.py
+from utils import greet
+print(greet("World"))
+```
+
+## \_\_name\_\_ == "\_\_main\_\_":
+
+Allows distinguishing whether the file is run directly or imported as a module:
+
+```python
+# my_module.py
+def main():
+    print("Running the module directly")
+
+if __name__ == "__main__":
+    # This code executes only when running directly:
+    # python my_module.py
+    main()
+```
+
+## Packages:
+
+A package is a directory with an `__init__.py` file containing multiple modules:
+
+```
+my_package/
+    __init__.py
+    module_a.py
+    module_b.py
+```
+
+```python
+from my_package.module_a import some_function
+```

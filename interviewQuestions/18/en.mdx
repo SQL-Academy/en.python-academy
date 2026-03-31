@@ -1,0 +1,60 @@
+---
+meta:
+    title: 'What is unpacking in Python?'
+    description: 'Unpacking allows assigning elements of a collection to multiple variables. Learn about multiple assignment and the * and ** operators in Python.'
+---
+
+> **Unpacking** is a mechanism that allows you to "extract" a collection into separate variables.
+
+## Multiple assignment:
+
+```python
+a, b, c = [1, 2, 3]
+print(a, b, c)  # 1 2 3
+
+# Works with tuples, strings, and other iterables
+x, y = (10, 20)
+first, second, third = "abc"
+```
+
+## Variable swapping (swap):
+
+```python
+a, b = 1, 2
+a, b = b, a
+print(a, b)  # 2 1
+```
+
+## Unpacking with * (asterisk):
+
+Collects the "remaining" items into a list:
+
+```python
+first, *rest = [1, 2, 3, 4, 5]
+print(first)  # 1
+print(rest)   # [2, 3, 4, 5]
+
+first, *middle, last = [1, 2, 3, 4, 5]
+print(middle)  # [2, 3, 4]
+```
+
+## Unpacking in function calls:
+
+```python
+def greet(name, age, city):
+    print(f"{name}, {age}, {city}")
+
+data = ["Anna", 25, "Moscow"]
+greet(*data)  # Unpacking a list
+
+info = {"name": "Ivan", "age": 30, "city": "St. Petersburg"}
+greet(**info)  # Unpacking a dictionary
+```
+
+## Unpacking in nested structures:
+
+```python
+points = [(1, 2), (3, 4), (5, 6)]
+for x, y in points:
+    print(f"x={x}, y={y}")
+```

@@ -1,0 +1,51 @@
+---
+meta:
+    title: 'What is an anonymous function (lambda)?'
+    description: 'Lambda is an anonymous one-line function. Learn lambda syntax, its usage with sorted, map, filter, and its limitations.'
+---
+
+> **Lambda** is an anonymous (unnamed) function defined in a single line. It can take any number of arguments but contains only one expression.
+
+## Syntax:
+
+```python
+# Regular function
+def square(x):
+    return x ** 2
+
+# Equivalent lambda
+square = lambda x: x ** 2
+
+square(5)  # 25
+```
+
+## Usage with sorted:
+
+```python
+users = [
+    {"name": "Anna", "age": 25},
+    {"name": "Boris", "age": 30},
+    {"name": "Vera", "age": 20},
+]
+
+# Sort by age
+sorted_users = sorted(users, key=lambda u: u["age"])
+```
+
+## Usage with map and filter:
+
+```python
+numbers = [1, 2, 3, 4, 5]
+
+squares = list(map(lambda x: x ** 2, numbers))
+# [1, 4, 9, 16, 25]
+
+evens = list(filter(lambda x: x % 2 == 0, numbers))
+# [2, 4]
+```
+
+## Limitations:
+
+-   Only **one expression** — you cannot use multi-line logic, loops, or assignments.
+-   Reduces **readability** for complex expressions — it's better to use a regular function.
+-   No **name** — makes debugging harder (appears as `<lambda>` in the traceback).

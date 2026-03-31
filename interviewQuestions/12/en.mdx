@@ -1,0 +1,58 @@
+---
+meta:
+    title: 'What are *args and **kwargs?'
+    description: '*args accepts an arbitrary number of positional arguments, **kwargs — keyword arguments. Learn how to use argument unpacking in Python.'
+---
+
+## *args — arbitrary number of positional arguments:
+
+Collects all extra positional arguments into a **tuple**:
+
+```python
+def total(*args):
+    return sum(args)
+
+total(1, 2, 3)      # 6
+total(10, 20)        # 30
+```
+
+## **kwargs — arbitrary number of keyword arguments:
+
+Collects all extra keyword arguments into a **dictionary**:
+
+```python
+def build_profile(**kwargs):
+    return kwargs
+
+build_profile(name="Anna", age=25, city="Moscow")
+# {'name': 'Anna', 'age': 25, 'city': 'Moscow'}
+```
+
+## Combining:
+
+The order of parameters in a function definition is strictly fixed: regular → `*args` → keyword-only → `**kwargs`:
+
+```python
+def func(a, b, *args, **kwargs):
+    print(f"a={a}, b={b}")
+    print(f"args={args}")
+    print(f"kwargs={kwargs}")
+
+func(1, 2, 3, 4, x=10, y=20)
+# a=1, b=2
+# args=(3, 4)
+# kwargs={'x': 10, 'y': 20}
+```
+
+## Unpacking during a call:
+
+```python
+def greet(name, age):
+    print(f"{name}, {age} years old")
+
+args_list = ["Anna", 25]
+greet(*args_list)      # Unpacking a list
+
+kwargs_dict = {"name": "Ivan", "age": 30}
+greet(**kwargs_dict)   # Unpacking a dictionary
+```

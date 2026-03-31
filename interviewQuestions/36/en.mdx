@@ -1,0 +1,62 @@
+---
+meta:
+    title: 'What are iterators and the iteration protocol?'
+    description: 'An iterator is an object with __iter__ and __next__ methods. Learn how the iteration protocol works and what the for loop does under the hood in Python.'
+---
+
+> An **iterator** is an object that returns elements one by one using the `__next__()` method and signals completion by raising a `StopIteration` exception.
+
+## The iteration protocol:
+
+-   `__iter__()` — returns the iterator object itself.
+-   `__next__()` — returns the next element or raises a `StopIteration` exception.
+
+## How a for loop works:
+
+```python
+# What 'for' does under the hood
+nums = [1, 2, 3]
+
+# for num in nums:
+#     print(num)
+
+# Equivalent:
+iterator = iter(nums)       # Calls nums.__iter__()
+while True:
+    try:
+        num = next(iterator)  # Calls iterator.__next__()
+        print(num)
+    except StopIteration:
+        break
+```
+
+## Creating a custom iterator:
+
+```python
+class Countdown:
+    def __init__(self, start):
+        self.current = start
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self.current <= 0:
+            raise StopIteration
+        value = self.current
+        self.current -= 1
+        return value
+
+for num in Countdown(5):
+    print(num)  # 5, 4, 3, 2, 1
+```
+
+## Built-in iterables:
+
+-   `list`, `tuple`, `str`, `dict`, `set` are **iterable** (they have an `__iter__` method).
+-   `range()`, `map()`, `filter()`, `zip()` return **iterators**.
+-   An **iterator** can only be traversed **once**, while an **iterable object** can be looped over multiple times.
+
+## In practice:
+
+The iteration protocol underpins `for` loops, generators, and many built-in functions. Custom iterators are useful when you need to process data in chunks — for example, reading a large file line by line instead of loading it all into memory.

@@ -1,0 +1,71 @@
+---
+meta:
+    title: 'What are magic (dunder) methods?'
+    description: 'Magic methods (__init__, __str__, __repr__, __eq__, etc.) define object behavior during standard operations in Python.'
+---
+
+> **Magic methods** (dunder methods, short for "double underscore") are special methods surrounded by double underscores that define the behavior of objects during built-in operations.
+
+## String representation:
+
+```python
+class Product:
+    def __init__(self, name, price):
+        self.name = name
+        self.price = price
+
+    def __str__(self):
+        # For the end user (print, str())
+        return f"{self.name}: ${self.price}"
+
+    def __repr__(self):
+        # For the developer (debugging, repr())
+        return f"Product('{self.name}', {self.price})"
+
+p = Product("Book", 50)
+print(p)       # Book: $50
+print(repr(p)) # Product('Book', 50)
+```
+
+## Object comparison:
+
+```python
+class Point:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+    def __eq__(self, other):
+        return self.x == other.x and self.y == other.y
+
+    def __lt__(self, other):
+        return (self.x ** 2 + self.y ** 2) < (other.x ** 2 + other.y ** 2)
+
+Point(1, 2) == Point(1, 2)  # True
+Point(1, 2) < Point(3, 4)   # True
+```
+
+## Other useful magic methods:
+
+-   `__len__` — behavior for `len(obj)`
+-   `__getitem__` — index access `obj[key]`
+-   `__contains__` — the `in` operator
+-   `__add__` — the `+` operator
+-   `__call__` — calling an object like a function `obj()`
+
+```python
+class Basket:
+    def __init__(self):
+        self.items = []
+
+    def __len__(self):
+        return len(self.items)
+
+    def __contains__(self, item):
+        return item in self.items
+
+basket = Basket()
+basket.items.append("apple")
+print(len(basket))           # 1
+print("apple" in basket)     # True
+```

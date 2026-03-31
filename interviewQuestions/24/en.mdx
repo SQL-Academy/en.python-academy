@@ -1,0 +1,79 @@
+---
+meta:
+    title: 'What is inheritance and how does it work in Python?'
+    description: 'Inheritance allows you to create classes based on existing ones. Learn about super(), method overriding, and multiple inheritance in Python.'
+---
+
+> **Inheritance** is an OOP mechanism where a child class inherits attributes and methods from a parent class.
+
+## Basic inheritance:
+
+```python
+class Animal:
+    def __init__(self, name):
+        self.name = name
+
+    def speak(self):
+        return f"{self.name} makes a sound"
+
+class Dog(Animal):
+    def speak(self):
+        return f"{self.name} says: Woof!"
+
+class Cat(Animal):
+    def speak(self):
+        return f"{self.name} says: Meow!"
+
+dog = Dog("Bobik")
+print(dog.speak())  # Bobik says: Woof!
+```
+
+## super() — calling a parent method:
+
+```python
+class Animal:
+    def __init__(self, name, age):
+        self.name = name
+        self.age = age
+
+class Dog(Animal):
+    def __init__(self, name, age, breed):
+        super().__init__(name, age)  # Call parent's __init__
+        self.breed = breed
+
+dog = Dog("Bobik", 3, "Labrador")
+print(dog.name, dog.breed)  # Bobik Labrador
+```
+
+## Checking inheritance:
+
+```python
+print(isinstance(dog, Dog))     # True
+print(isinstance(dog, Animal))  # True
+print(issubclass(Dog, Animal))  # True
+```
+
+## Overriding methods:
+
+A child class can replace or extend a parent's method:
+
+```python
+class Shape:
+    def area(self):
+        return 0
+
+class Rectangle(Shape):
+    def __init__(self, width, height):
+        self.width = width
+        self.height = height
+
+    def area(self):
+        return self.width * self.height
+
+rect = Rectangle(5, 3)
+print(rect.area())  # 15
+```
+
+## Multiple inheritance:
+
+Python supports inheriting from multiple classes. The method lookup order is determined by the MRO (Method Resolution Order) algorithm, which can be inspected via `ClassName.mro()`.

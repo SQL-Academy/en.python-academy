@@ -1,0 +1,67 @@
+---
+meta:
+    title: 'What is the difference between a shallow copy and a deep copy?'
+    description: 'A shallow copy copies references to nested objects, while a deep copy (deepcopy) creates a completely independent copy in Python.'
+---
+
+## Shallow copy:
+
+Creates a new object but **does not copy nested objects** — it maintains references to the originals:
+
+```python
+import copy
+
+original = [[1, 2, 3], [4, 5, 6]]
+shallow = copy.copy(original)
+
+shallow[0][0] = 999
+print(original[0][0])  # 999 — the original has changed too!
+```
+
+## Deep copy:
+
+Creates a **completely independent clone**, including all nested objects:
+
+```python
+import copy
+
+original = [[1, 2, 3], [4, 5, 6]]
+deep = copy.deepcopy(original)
+
+deep[0][0] = 999
+print(original[0][0])  # 1 — the original remains unchanged
+```
+
+## Ways to make a shallow copy:
+
+```python
+# For lists
+lst = [1, 2, 3]
+copy1 = lst.copy()
+copy2 = lst[:]
+copy3 = list(lst)
+
+# For dictionaries
+d = {"a": 1}
+copy4 = d.copy()
+copy5 = dict(d)
+
+# Universal
+import copy
+copy6 = copy.copy(lst)
+```
+
+## When to use which:
+
+-   **Shallow** — when the collection only contains immutable elements (numbers, strings).
+-   **Deep** — when there are nested mutable objects (lists within lists, dictionaries within lists).
+
+```python
+# Shallow is sufficient
+nums = [1, 2, 3]  # Elements are immutable ints
+safe_copy = nums.copy()
+
+# Deep copy is required
+matrix = [[1, 2], [3, 4]]  # Nested lists
+safe_copy = copy.deepcopy(matrix)
+```

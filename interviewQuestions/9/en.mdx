@@ -1,0 +1,57 @@
+---
+meta:
+    title: 'How do if / elif / else conditional statements work?'
+    description: 'Conditional statements if/elif/else control program branching. Learn about the ternary operator and truthy/falsy values in Python.'
+---
+
+Conditional statements allow you to execute different blocks of code depending on a condition.
+
+## Syntax:
+
+```python
+age = 18
+
+if age < 13:
+    print("Child")
+elif age < 18:
+    print("Teenager")
+else:
+    print("Adult")
+```
+
+## Ternary operator:
+
+A concise way to write a condition in a single line:
+
+```python
+status = "adult" if age >= 18 else "minor"
+```
+
+## Truthy and Falsy values:
+
+In Python, the following values are considered **false** (Falsy):
+
+-   `False`, `None`
+-   `0`, `0.0`
+-   Empty collections: `""`, `[]`, `()`, `{}`, `set()`
+
+Everything else is considered **true** (Truthy):
+
+```python
+items = []
+
+if items:
+    print("List is not empty")
+else:
+    print("List is empty")  # This block will execute
+```
+
+## Chained comparisons:
+
+Python supports chained comparisons:
+
+```python
+x = 5
+if 1 < x < 10:
+    print("x is in the range from 1 to 10")
+```

@@ -1,0 +1,55 @@
+---
+meta:
+    title: 'How does exception handling work in Python?'
+    description: 'Exception handling in Python is done via try/except/else/finally. Learn about the exception hierarchy and proper error handling.'
+---
+
+> An **exception** is an error that occurs during the execution of a program. Python allows catching and handling exceptions so the program doesn't crash.
+
+## try/except syntax:
+
+```python
+try:
+    result = 10 / 0
+except ZeroDivisionError:
+    print("Division by zero!")
+```
+
+## Full try/except/else/finally construct:
+
+```python
+try:
+    number = int(input("Enter a number: "))
+except ValueError:
+    print("That's not a number!")
+else:
+    # Executes if NO exception occurred
+    print(f"You entered: {number}")
+finally:
+    # ALWAYS executes
+    print("Shutting down")
+```
+
+## Catching multiple exceptions:
+
+```python
+try:
+    value = int("abc")
+except (ValueError, TypeError) as e:
+    print(f"Error: {e}")
+```
+
+## Hierarchy of main exceptions:
+
+-   `BaseException`
+    -   `Exception` — base class for most exceptions
+        -   `ValueError` — invalid value
+        -   `TypeError` — invalid type
+        -   `KeyError` — key not found in dictionary
+        -   `IndexError` — index out of range for a list
+        -   `FileNotFoundError` — file not found
+        -   `ZeroDivisionError` — division by zero
+
+## Important rule:
+
+Catch **specific** exceptions instead of a generic `except Exception` — this helps avoid hiding unexpected errors.

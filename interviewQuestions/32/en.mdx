@@ -1,0 +1,58 @@
+---
+meta:
+    title: 'What is a virtual environment and why is it needed?'
+    description: 'A virtual environment isolates project dependencies. Learn about venv, pip, and requirements.txt for package management in Python.'
+---
+
+> A **virtual environment** is an isolated Python environment where packages are installed only for a specific project, without affecting the global installation.
+
+## Why it's needed:
+
+-   Different projects might require **different versions** of the same library.
+-   To avoid **conflicts** between dependencies of different projects.
+-   To lock exact package versions for **reproducibility**.
+
+## Creation and usage (venv):
+
+```bash
+# Create a virtual environment
+python -m venv venv
+
+# Activation
+# macOS/Linux:
+source venv/bin/activate
+# Windows:
+venv\Scripts\activate
+
+# Deactivation
+deactivate
+```
+
+## Package management (pip):
+
+```bash
+# Install a package
+pip install requests
+
+# Install a specific version
+pip install requests==2.31.0
+
+# List installed packages
+pip list
+
+# Save dependencies to a file
+pip freeze > requirements.txt
+
+# Install dependencies from a file
+pip install -r requirements.txt
+```
+
+## requirements.txt:
+
+```
+requests==2.31.0
+flask==3.0.0
+pytest==7.4.3
+```
+
+This file locks all project dependencies, allowing you to recreate the environment on another machine.

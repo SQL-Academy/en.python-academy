@@ -1,0 +1,47 @@
+---
+meta:
+    title: 'How do the built-in map, filter, and zip functions work?'
+    description: 'map applies a function to each item, filter selects by condition, zip combines multiple collections. Examples of usage in Python.'
+---
+
+## map — applies a function to each item:
+
+```python
+numbers = [1, 2, 3, 4, 5]
+squares = list(map(lambda x: x ** 2, numbers))
+# [1, 4, 9, 16, 25]
+
+# Equivalent using comprehension
+squares = [x ** 2 for x in numbers]
+```
+
+## filter — selects items by condition:
+
+```python
+numbers = [1, 2, 3, 4, 5, 6]
+evens = list(filter(lambda x: x % 2 == 0, numbers))
+# [2, 4, 6]
+
+# Equivalent using comprehension
+evens = [x for x in numbers if x % 2 == 0]
+```
+
+## zip — combines multiple collections:
+
+```python
+names = ["Anna", "Boris", "Vera"]
+ages = [25, 30, 22]
+
+pairs = list(zip(names, ages))
+# [('Anna', 25), ('Boris', 30), ('Vera', 22)]
+
+# Often used to create a dictionary
+user_ages = dict(zip(names, ages))
+# {'Anna': 25, 'Boris': 30, 'Vera': 22}
+```
+
+## Features:
+
+-   All three functions return **iterators**, not lists — you need to wrap them in `list()` to get a list.
+-   `zip` stops according to the **shortest** collection.
+-   In most cases, **list comprehension** is considered a more readable alternative to `map` and `filter`.

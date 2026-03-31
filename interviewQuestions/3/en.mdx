@@ -1,0 +1,37 @@
+---
+meta:
+    title: 'What is the difference between a list and a tuple?'
+    description: 'A list is a mutable collection, a tuple is immutable. Learn the key differences between list and tuple in Python.'
+---
+
+## List:
+
+-   **Mutable**: you can add, remove, and modify elements.
+-   Created using square brackets `[]`.
+-   Uses more memory due to resizing capability.
+
+```python
+fruits = ["apple", "banana", "cherry"]
+fruits.append("pear")       # Add element
+fruits[0] = "orange"        # Modify element
+```
+
+## Tuple:
+
+-   **Immutable**: cannot be changed after creation.
+-   Created using parentheses `()`.
+-   Faster and uses less memory.
+-   Can be used as a dictionary key (since it's hashable).
+
+```python
+point = (10, 20)
+# point[0] = 5  # TypeError — cannot modify
+
+# Tuple as a dictionary key
+locations = {(55.75, 37.62): "Moscow"}
+```
+
+## When to use which:
+
+-   `list` — when the collection will change (adding, removing elements).
+-   `tuple` — when data should be immutable (coordinates, configurations, dictionary keys).

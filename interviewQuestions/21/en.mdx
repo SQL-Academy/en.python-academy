@@ -1,0 +1,57 @@
+---
+meta:
+    title: 'What is a context manager and how does the with statement work?'
+    description: 'A context manager automatically handles resources via the with statement. Learn about the __enter__ and __exit__ methods in Python.'
+---
+
+> A **context manager** is an object that automatically performs actions when entering a block of code and when exiting it (even if an error occurs).
+
+## The with statement:
+
+The most common example is working with files:
+
+```python
+# Without with — you must remember to close the file
+file = open("data.txt", "r")
+try:
+    content = file.read()
+finally:
+    file.close()
+
+# With with — the file gets closed automatically
+with open("data.txt", "r") as file:
+    content = file.read()
+# The file is already closed
+```
+
+## How it works:
+
+-   `__enter__()` — called upon entering the `with` block. Its return value is assigned to the variable after `as`.
+-   `__exit__()` — called upon exiting the `with` block, **even if an exception was raised**.
+
+## Creating a custom context manager:
+
+```python
+class Timer:
+    def __enter__(self):
+        import time
+        self.start = time.time()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        import time
+        elapsed = time.time() - self.start
+        print(f"Execution time: {elapsed:.2f} sec")
+        return False  # Don't suppress exceptions
+
+with Timer():
+    total = sum(range(1_000_000))
+# Execution time: 0.03 sec
+```
+
+## Where context managers are used:
+
+-   Working with **files** (`open`)
+-   **Locks** in multithreading (`threading.Lock`)
+-   **Database connections** (automatic commit/rollback)
+-   **Temporary resources** (temporary files, network connections)

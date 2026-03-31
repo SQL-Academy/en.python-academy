@@ -1,0 +1,64 @@
+---
+meta:
+    title: 'What is polymorphism in Python?'
+    description: 'Polymorphism allows objects of different classes to share the same interface. Learn about duck typing and method overriding in Python.'
+---
+
+> **Polymorphism** is the ability of objects from different classes to respond differently to the same method call.
+
+## Polymorphism through method overriding:
+
+```python
+class Cat:
+    def speak(self):
+        return "Meow!"
+
+class Dog:
+    def speak(self):
+        return "Woof!"
+
+class Duck:
+    def speak(self):
+        return "Quack!"
+
+# Same interface, different behavior
+animals = [Cat(), Dog(), Duck()]
+for animal in animals:
+    print(animal.speak())
+```
+
+## Duck Typing:
+
+> "If it looks like a duck, swims like a duck, and quacks like a duck, then it probably is a duck."
+
+Python does not check the object's type — what matters is the presence of the required method:
+
+```python
+class File:
+    def read(self):
+        return "data from a file"
+
+class Database:
+    def read(self):
+        return "data from a DB"
+
+def load_data(source):
+    # The type doesn't matter, only that it has a 'read' method
+    return source.read()
+
+print(load_data(File()))      # data from a file
+print(load_data(Database()))  # data from a DB
+```
+
+## Polymorphism of built-in functions:
+
+```python
+# len() works with different types
+print(len("Python"))    # 6
+print(len([1, 2, 3]))   # 3
+print(len({"a": 1}))    # 1
+
+# + behaves differently
+print(1 + 2)           # 3 (addition)
+print("Hello, " + "world!")  # Hello, world! (concatenation)
+```
