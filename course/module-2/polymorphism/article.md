@@ -1,118 +1,85 @@
 # Polymorphism
 
-Imagine you have a universal remote control that magically adapts to any device. 🪄 Press the same button — the TV will show a movie, the music center will play music, and the smart home will dim the lights. This is polymorphism in the programming world — the ability to use the same commands for different objects, getting different but appropriate results.
-
-## What is Polymorphism?
-
-> Polymorphism is the ability of objects of different classes to respond to the same methods or operations in different ways. In Greek, "polymorphism" means "many forms."
-
-In simple terms: **same method, different behavior**, depending on the object.
-
-### Real-life Example
-
-Imagine the "Play" button ▶️ on various devices:
-
--   On a music player, it plays audio 🎵
--   On a video player, it starts a video 🎬
--   On a game console, it launches a game 🎮
-
-The same button (common interface), but different behavior depending on the device — that's polymorphism.
-
-## Types of Polymorphism in Python
-
-In Python, there are several types of polymorphism:
-
-1. **Polymorphism with functions and methods** — one function works with different data types
-2. **Polymorphism with inheritance** — subclasses override methods of the parent class
-3. **Polymorphism through "duck typing"** — if an object can do what we need, it doesn't matter what type it is
-4. **Operator polymorphism** — operators (+, -, \* etc.) work differently with different types
-
-Let's explore each type with simple examples!
-
-## Polymorphism with Functions and Methods
-
-Many built-in Python functions are already polymorphic — they work the same way with different data types:
+Suppose we have a dog, a cat, and a duck, and we need to make each of them `speak()`. Without polymorphism it would look something like this:
 
 ```python
-# The len() function works with different data types
-print(f"String length: {len('Hello')}")  # Counts characters
-print(f"List length: {len([1, 2, 3, 4])}")  # Counts elements
-print(f"Dictionary length: {len({'a': 1, 'b': 2})}")  # Counts key-value pairs
-
-# The + operator is also polymorphic!
-print(f"10 + 5 = {10 + 5}")  # Adding numbers
-print(f"'Hello' + ' World' = {'Hello' + ' World'}")  # Concatenating strings
-print(f"[1, 2] + [3, 4] = {[1, 2] + [3, 4]}")  # Combining lists
+for animal in animals:
+    if isinstance(animal, Dog):
+        print(animal.bark())
+    elif isinstance(animal, Cat):
+        print(animal.meow())
+    elif isinstance(animal, Duck):
+        print(animal.quack())
 ```
 
-See? The `len()` function and the `+` operator work completely differently depending on the data type, but are used in the same way!
+Every time a new kind of animal shows up, you have to add another `elif` branch. Code that **knows** about every possible type can't grow without being rewritten.
 
-## Polymorphism with Inheritance
-
-This type of polymorphism is most commonly used in OOP. Let's imagine we have different animals that make different sounds:
+Polymorphism is the idea of "make the same call, and let the class decide how to respond". The same loop becomes:
 
 ```python
+for animal in animals:
+    print(animal.speak())
+```
+
+`Dog.speak()` returns "Woof!", `Cat.speak()` returns "Meow!", `Duck.speak()` returns "Quack!". One call, different behavior depending on the object.
+
+## Polymorphism through inheritance
+
+The most common case: a common parent class defines the "contract" (which methods the children must have), and each child implements them its own way.
+
+```python-executable
 class Animal:
     def __init__(self, name):
         self.name = name
 
     def speak(self):
-        # Base method that will be overridden in subclasses
-        raise NotImplementedError("Each animal must define its own sound!")
-
-    def introduce(self):
-        # This method uses speak(), but doesn't know how it's implemented
-        return f"My name is {self.name}, and I say {self.speak()}"
+        return f"{self.name} is silent."
 
 class Dog(Animal):
     def speak(self):
-        return "woof!"  # Dogs bark
+        return f"{self.name} says: Woof!"
 
 class Cat(Animal):
     def speak(self):
-        return "meow!"  # Cats meow
+        return f"{self.name} says: Meow!"
 
-# Create animals and call the same method
-dog = Dog("Rex")
-cat = Cat("Fluffy")
+class Duck(Animal):
+    def speak(self):
+        return f"{self.name} says: Quack!"
 
-print(dog.introduce())
-print(cat.introduce())
-
-# Polymorphism in action - processing different objects the same way
-# We can work with a list of animals without knowing what they are!
-animals = [Dog("Buddy"), Cat("Whiskers"), Dog("Max")]
-print("Animals introducing themselves:")
+animals = [Dog("Rex"), Cat("Fluffy"), Duck("Donald")]
 for animal in animals:
-    print(f"- {animal.introduce()}")
+    print(animal.speak())
+# Output:
+# Rex says: Woof!
+# Fluffy says: Meow!
+# Donald says: Quack!
 ```
 
-What's happening here:
+Inside the loop we never ask "what kind of object are you?" — each animal knows how to speak for itself. Add `class Cow(Animal):` with its own `speak()`, and the loop doesn't change by a single line.
 
-1. We have a base class `Animal` with a `speak()` method that needs to be overridden
-2. The `Dog` and `Cat` classes inherit from `Animal` and override the `speak()` method
-3. The `introduce()` method is defined in the base class and uses polymorphism: it calls `speak()` without knowing its specific implementation
-4. We can work with different animals through a single interface, without worrying about the specific type
+## Abstract classes
 
-## Polymorphism through Abstract Classes
+Often you want to be sure that **every subclass actually implements the required method**. For example, the base `Shape` class should force every concrete class (Rectangle, Circle, …) to implement `area()`. If someone forgets, it's better to find out immediately, not when the program is already running.
 
-Abstract classes help us define which methods all subclasses must have. They're like a blueprint or contract:
+For that Python has **abstract base classes** in the `abc` module:
 
-```python
-from abc import ABC, abstractmethod  # ABC = Abstract Base Class
+```python-executable
+from abc import ABC, abstractmethod
+import math
 
-class Shape(ABC):  # Abstract class for geometric shapes
-    @abstractmethod  # This decorator means "method must be implemented in subclasses"
+class Shape(ABC):
+    @abstractmethod
     def area(self):
-        pass  # No implementation here, but it must exist in all subclasses
+        pass
 
     @abstractmethod
     def perimeter(self):
         pass
 
     def describe(self):
-        # This method uses area() and perimeter(), without knowing their implementation
-        return f"Area: {self.area():.2f}, Perimeter: {self.perimeter():.2f}"
+        # Uses area() and perimeter() without knowing how they're implemented
+        return f"Area: {self.area():.2f}, perimeter: {self.perimeter():.2f}"
 
 class Rectangle(Shape):
     def __init__(self, width, height):
@@ -120,91 +87,78 @@ class Rectangle(Shape):
         self.height = height
 
     def area(self):
-        return self.width * self.height  # Rectangle area
+        return self.width * self.height
 
     def perimeter(self):
-        return 2 * (self.width + self.height)  # Rectangle perimeter
+        return 2 * (self.width + self.height)
 
 class Circle(Shape):
     def __init__(self, radius):
         self.radius = radius
 
     def area(self):
-        import math
-        return math.pi * self.radius ** 2  # Circle area
+        return math.pi * self.radius ** 2
 
     def perimeter(self):
-        import math
-        return 2 * math.pi * self.radius  # Circumference
+        return 2 * math.pi * self.radius
 
-# Work with different shapes in the same way
 shapes = [Rectangle(5, 3), Circle(4)]
 for i, shape in enumerate(shapes, 1):
     print(f"Shape {i}: {shape.describe()}")
+# Output:
+# Shape 1: Area: 15.00, perimeter: 16.00
+# Shape 2: Area: 50.27, perimeter: 25.13
 ```
 
-Benefits of abstract classes:
+What `ABC` gave us:
 
--   They ensure that subclasses implement all necessary methods
--   Help structure code and make it more predictable
--   Allow using polymorphism more safely
+-   You can't instantiate `Shape` directly (`Shape()` raises an error). And that's reasonable: "a shape" on its own is meaningless; you need a concrete one.
+-   If `Circle` had forgotten to define `perimeter()`, Python would refuse to create a `Circle()` at creation time, not later when some missing method gets called.
 
-## "Duck Typing"
+Meanwhile `describe()` is defined right in `Shape` and works for any descendant — it relies on `area()` and `perimeter()` without knowing their implementations. That's polymorphism through an abstract base class.
 
-In Python, there's an interesting principle: "If it walks like a duck and quacks like a duck, then it probably is a duck." This means that what matters is not the types of objects, but what they can do:
+## Duck typing
 
-```python
+Python goes one step further: polymorphism **doesn't** require shared inheritance. If an object behaves the right way (has the right methods), it qualifies. People phrase it as: "if it walks like a duck and quacks like a duck, it's a duck".
+
+```python-executable
 class Duck:
     def swim(self):
-        return "Duck swims"
+        return "The duck swims."
 
     def sound(self):
         return "Quack quack!"
 
 class Person:
     def swim(self):
-        return "Person swims"
+        return "The person swims."
 
     def sound(self):
         return "Hello!"
 
-# This function works with ANY object that has swim() and sound() methods
-# It doesn't matter what class it is!
-def make_it_swim_and_sound(entity):
-    print(f"Swimming: {entity.swim()}")
-    print(f"Sound: {entity.sound()}")
+def describe(entity):
+    print(entity.swim())
+    print(entity.sound())
 
-# Duck and Person are completely different classes, but the function works with both
-duck = Duck()
-person = Person()
-
-print("Duck:")
-make_it_swim_and_sound(duck)
-
-print("\nPerson:")
-make_it_swim_and_sound(person)
+describe(Duck())
+# Output:
+# The duck swims.
+# Quack quack!
+describe(Person())
+# Output:
+# The person swims.
+# Hello!
 ```
 
-In this example:
+The `describe` function doesn't check whether it's looking at a duck or a person. All it cares about is that the object has `swim()` and `sound()` methods. `Duck` and `Person` share no parent class, but polymorphism still works.
 
--   We don't have a common base class
--   Duck and Person are completely different classes
--   But both can "swim" and "make a sound"
--   Our function works with any object that has `swim()` and `sound()` methods
+This is a very Pythonic approach: instead of "describe the type", "describe the behavior". In practice it often saves you from needless layers of abstraction.
 
-This is "duck typing" - a more flexible form of polymorphism inherent to Python.
+## What's next?
 
-## Understanding Check
+Polymorphism wraps up the four principles of OOP. The key practical effect: code that calls methods through a shared interface doesn't need to be rewritten when new classes appear. Extensibility is built into the architecture.
+
+---
 
 **Which of the following is an example of polymorphism in Python?**
 
-
-## Advantages of Polymorphism
-
-Why you should use polymorphism in your code:
-
-1. **Code simplification** — write one method instead of several similar ones
-2. **Flexibility** — easily add new types without changing existing code
-3. **Readability** — code becomes clearer and easier to maintain
-4. **Extensibility** — new classes work with old code without changes
-5. **Less repetition** — common logic is written only once

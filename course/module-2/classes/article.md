@@ -1,143 +1,131 @@
 # Classes and Objects
 
-In this article, we'll explore in more detail the basic building blocks of object-oriented programming — classes and objects.
-These concepts form the foundation of OOP and will help you structure your code in the most effective way. 🧱
+In the previous lesson we covered the basics: a class is a template, an object is a filled-in instance, and methods take `self` as their first parameter. In this article we'll go deeper on three topics: how `self` **actually** works under the hood, the fact that objects in Python are **mutable**, and why you can add attributes **on the fly** (and why you usually shouldn't).
 
-## What is a Class?
+## How self works
 
-> A class is a template or "blueprint" that defines the structure and behavior of objects of a specific type. A class describes what data (attributes) the objects will contain and what operations (methods) they can perform.
+When you write `person.greet()`, Python internally turns this into `Person.greet(person)`. The object on the left of the dot automatically becomes the first argument of the method — that's the `self` you see in the method signature.
 
-To continue with the construction analogy, a class is like a house plan, and an object is a specific house built according to that plan.
+Through `self`, the method sees its own data:
 
-## Syntax for Creating a Class
-
-In Python, a class is created using the `class` keyword:
-
-```python
+```python-executable
 class Person:
-    """This is the documentation for the Person class.
-    The class represents a person with a name and age."""
-
-    # Class constructor
     def __init__(self, name, age):
-        self.name = name  # instance attribute
-        self.age = age    # instance attribute
+        self.name = name
+        self.age = age
 
-    # Class method
     def greet(self):
-        return f"Hello! My name is {self.name}, I am {self.age} years old."
+        return f"Hi, my name is {self.name}, I'm {self.age} years old."
 
-# Let's look at the class documentation
-print(Person.__doc__)
+person = Person("Anna", 25)
+
+# These two calls do the same thing:
+print(person.greet())
+# Output: Hi, my name is Anna, I'm 25 years old.
+print(Person.greet(person))
+# Output: Hi, my name is Anna, I'm 25 years old.
 ```
 
-The main elements defined in a class:
+`self` isn't a keyword or magic. It's just the conventional name for a method's first parameter. Technically you can call it whatever you want (`def greet(this):` works too), but the Python community expects `self` and linters will complain about other names.
 
-1. **Class name** — the name should follow the PascalCase convention (each word capitalized, no underscores)
-2. **Documentation** — a documentation string describing the purpose of the class
-3. **Constructor** — a special `__init__` method that's called when creating a new instance
-4. **Attributes** — variables that store class or instance data
-5. **Methods** — functions defined within the class that can work with class attributes
+Through `self`, methods can call other methods on the same object:
 
-## What is an Object?
+```python-executable
+class Person:
+    def __init__(self, name, age):
+        self.name = name
+        self.age = age
 
-> An object (or class instance) is a concrete implementation of a class, created in memory. Each object has its own unique state (attribute values) and can perform the behaviors defined in the class (methods).
+    def is_adult(self):
+        return self.age >= 18
 
-Objects are created by calling the class as if it were a function:
+    def describe(self):
+        status = "an adult" if self.is_adult() else "a minor"
+        return f"{self.name}: {status}"
 
-```python
-# Creating Person class objects
-person1 = Person("Anna", 25)
-person2 = Person("Ivan", 30)
-
-# Using object methods
-print(person1.greet())
-print(person2.greet())
-
-# Accessing object attributes
-print(f"Second person's name: {person2.name}")
-print(f"First person's age: {person1.age}")
+person = Person("Anna", 25)
+print(person.describe())
+# Output: Anna: an adult
 ```
 
-Note:
+## Objects in Python are mutable
 
--   Each object has its own state (attribute values)
--   All objects of the same class have the same set of methods
--   Changing the attributes of one object does not affect other objects
+After an object is created, its state can change: by calling methods that modify attributes, or by assigning to attributes directly.
 
-## Understanding the self Parameter
-
-You probably noticed the `self` parameter in the class method definitions. This is a special parameter that refers to the specific instance of the class.
-
--   `self` is automatically passed when a method is called via an object
--   Through `self` we get access to the attributes and other methods of the instance
--   While the name `self` is not mandatory, it's a common convention in Python
-
-```python
-class Demo:
-    def method1(self):
-        return "Method 1 called"
-
-    def method2(self):
-        # Calling another method via self
-        return f"Method 2 called and inside it: {self.method1()}"
-
-demo = Demo()
-print(demo.method2())
-```
-
-## Modifying Objects After Creation
-
-Objects can be modified after they're created, adding new attributes or changing existing ones:
-
-```python
+```python-executable
 class Student:
     def __init__(self, name):
         self.name = name
-        self.grades = []  # empty list of grades
+        self.grades = []
 
     def add_grade(self, grade):
         self.grades.append(grade)
-        return f"Added grade: {grade}"
+        return f"Grade added: {grade}"
 
     def average_grade(self):
         if not self.grades:
             return "No grades"
         return sum(self.grades) / len(self.grades)
 
-# Creating a student
 student = Student("Maria")
-print(f"Created student: {student.name}")
-print(f"Average grade: {student.average_grade()}")
+print(f"Average: {student.average_grade()}")
+# Output: Average: No grades
 
-# Adding grades
 print(student.add_grade(5))
+# Output: Grade added: 5
 print(student.add_grade(4))
+# Output: Grade added: 4
 print(student.add_grade(5))
+# Output: Grade added: 5
 
-# Checking the average grade
-print(f"Average grade after adding grades: {student.average_grade()}")
-
-# Adding a new attribute (not recommended, but possible)
-student.age = 19
-print(f"Added age attribute: {student.age}")
+print(f"Average: {student.average_grade()}")
+# Output: Average: 4.666666666666667
 ```
 
-## How to Properly Organize Classes?
+The `add_grade` method modifies `self.grades` — the list stored in the object. Changes happen **in place**: the next call to `student.average_grade()` sees the updated state. It's not "return a new list", it's "modify the existing one".
 
-When creating classes, follow these recommendations:
+## Dynamic attributes
 
-1. **Single Responsibility Principle** — a class should have only one reason to change
-2. **Encapsulation** — try to hide internal implementation details
-3. **Consistent Interface** — class methods should provide a clear, understandable interface
-4. **Documentation** — add documentation to all classes and methods
-5. **Reasonable Size** — a class should not be too large, it's better to split it into several classes
+In Python, you can add **any** attribute to an object at any time, even one that wasn't declared in `__init__`:
 
-## Understanding Check
+```python-executable
+class Student:
+    def __init__(self, name):
+        self.name = name
 
-**Which of the following correctly describes the relationship between classes and objects?**
+student = Student("Maria")
+student.age = 19              # added a new attribute on the fly
+student.favorite_color = "blue"
 
+print(student.age)
+# Output: 19
+print(student.favorite_color)
+# Output: blue
+```
 
-Now you know what classes and objects are in Python, and how to create and use them.
+Technically this works, but in real code you almost never do this. A few reasons:
 
-In the next article, we'll look at class attributes and methods in more detail, including different types of attributes (instance and class) and special Python methods. See you then! 👋
+-   **The object's state becomes unpredictable.** Looking at the `Student` class, you can't tell what attributes an object actually has.
+-   **IDE and linter autocomplete won't help**: they only know what's declared in `__init__`.
+-   **A typo creates a new attribute instead of raising an error.** If you write `student.aeg = 19` instead of `student.age = 19`, Python silently creates a new `aeg` field, and the bug is hard to spot.
+
+The rule of thumb: declare all attributes in `__init__`, even with `None` if they'll be filled in later:
+
+```python
+class Student:
+    def __init__(self, name):
+        self.name = name
+        self.age = None       # will be filled in later
+        self.grades = []
+```
+
+That way the class honestly describes what fields an object has, and typos immediately become `AttributeError`.
+
+## What's next?
+
+In the next lesson we'll go deeper into attributes: the difference between instance and class attributes, and the classic mutable-default gotcha in `__init__`.
+
+---
+
+**What happens when you call `Person.greet(person)` if `greet` is defined with `self` as its first parameter?**
+

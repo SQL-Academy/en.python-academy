@@ -1,296 +1,151 @@
-# Mocks and Stubs in Python: Isolating Tests with unittest.mock
+# Mocks and stubs: isolating tests
 
-In the previous articles, we mastered `pytest`, including its powerful fixtures and parametrization. However, when testing real applications, a common problem arises: our code depends on external systems (databases, APIs, file systems, time) or other complex components that are difficult or undesirable to use directly in tests.
+Real code talks to the outside world a lot: HTTP requests, databases, files, time. That's a problem in tests: the network can fail, the DB can be slow, time is uncontrollable. A test should check **your logic**, not whether someone else's service is up.
 
-This is where **test doubles**, particularly **mocks** and **stubs**, come to the rescue.
+The fix is a **test double**: slip a fake object into your code that behaves the way you want. The fake has two main roles:
 
-## The Problem of External Dependencies
+-   **Stub** returns canned answers, no checks needed.
+-   **Mock** does the same and also records calls (with which arguments, how many times) so the test can verify them.
 
-Imagine you are testing a function that:
+In Python both are built with one tool: `unittest.mock`.
 
--   Sends an HTTP request to an external API (e.g., to get currency exchange rates).
--   Reads or writes data to a database.
--   Works with files on disk.
--   Depends on the current time.
+## The Mock object
 
-Using these dependencies directly in unit tests is undesirable because:
-
--   **Slow**: Network requests or database operations can be lengthy.
--   **Unreliable**: The external service might be unavailable, or data in the DB might change.
--   **Hard to Control**: It's difficult to simulate specific responses or error states from external systems.
--   **Side Effects**: Tests might alter real data (e.g., create records in the DB or send actual emails).
-
-> The goal of unit testing is to verify the logic of _your_ code in isolation. Test doubles allow replacing real dependencies with controlled simulations.
-
-## Test Doubles: Stubs vs. Mocks
-
-There are several types of test doubles, but stubs and mocks are the most commonly used.
-
--   **Stub**: A simple object that provides predefined ("canned") answers to method calls during a test. Stubs are used when the test needs some data from a dependency, but the dependency itself is not the object under test.
-
-    -   _Example_: A stub for a weather service always returns `{"temperature": 25, "condition": "sunny"}`.
-
--   **Mock**: A more "intelligent" object. Mocks not only provide responses (like stubs) but also allow you to **verify how your code interacted with that dependency**. You can set expectations (e.g., which method should be called, with what arguments, how many times) and then check if these expectations were met.
-    -   _Example_: A mock for an email sending service that allows verifying that the `send_email` method was called exactly once with the correct recipient address and subject line.
-
-| Type     | Primary Purpose                                        | Verifies Interactions? | When to Use                                             |
-| -------- | ------------------------------------------------------ | ---------------------- | ------------------------------------------------------- |
-| **Stub** | Providing fixed data for the test                      | No                     | When the test needs simple data from a dependency       |
-| **Mock** | Simulating behavior and **verifying** call correctness | Yes                    | When it's important to check how code uses a dependency |
-
-## The unittest.mock Library
-
-Python provides a powerful standard library, `unittest.mock`, for creating mocks, stubs, and other test doubles. It integrates perfectly with `pytest`.
-
-Key components of `unittest.mock`:
-
--   `Mock` and `MagicMock`: Core classes for creating mock objects. `MagicMock` extends `Mock` by providing implementations for most magic methods (e.g., `__str__`, `__len__`).
--   `patch`: A powerful tool (decorator or context manager) for temporarily replacing objects in your code with mocks during test execution.
-
-### Basic Usage of Mock
+Simplest case: create a `Mock` and configure what its methods should return.
 
 ```python
-# test_basic_mock.py
 from unittest.mock import Mock
 
-def process_payment(payment_service, amount):
-    # print(f"Attempting to charge {amount}...") # Simplified by removing print
-    success = payment_service.charge(amount)
-    if success:
-        # print("Payment successful") # Simplified
-        payment_service.log_transaction(details=f"Charged {amount}")
-        return "SUCCESS"
-    else:
-        # print("Payment error") # Simplified
-        return "FAILED"
+def process_payment(service, amount):
+    if service.charge(amount):
+        service.log(f"charged {amount}")
+        return "OK"
+    return "FAIL"
 
-def test_process_payment_success():
-    # 1. Create a mock for payment_service
-    mock_payment_service = Mock()
+def test_payment_success():
+    service = Mock()
+    service.charge.return_value = True       # configure the mock
 
-    # 2. Configure the mock's behavior
-    # The charge() method should return True
-    mock_payment_service.charge.return_value = True
+    result = process_payment(service, 100)
 
-    # 3. Call the function under test with the mock
-    result = process_payment(mock_payment_service, 100)
-
-    # 4. Check the function's return value
-    assert result == "SUCCESS"
-
-    # 5. Verify interactions with the mock
-    mock_payment_service.charge.assert_called_once_with(100) # Check charge was called once with 100
-    mock_payment_service.log_transaction.assert_called_once_with(details="Charged 100") # Check log_transaction call
-
-def test_process_payment_failure():
-    mock_payment_service = Mock()
-    mock_payment_service.charge.return_value = False # Simulate failed payment
-
-    result = process_payment(mock_payment_service, 50)
-
-    assert result == "FAILED"
-    mock_payment_service.charge.assert_called_once_with(50)
-    mock_payment_service.log_transaction.assert_not_called() # Ensure log_transaction was not called
+    assert result == "OK"
+    service.charge.assert_called_once_with(100)
+    service.log.assert_called_once_with("charged 100")
 ```
 
-In these examples, `mock_payment_service.charge` and `mock_payment_service.log_transaction` automatically become mocks upon first access. The `return_value` attribute sets what the mock method call will return. Methods like `assert_called_once_with()` and `assert_not_called()` verify how the mock was used.
+`process_payment` takes `service` as an argument. In production code that's the real payment service; in the test we pass a Mock through the same argument — this is the point of "dependency through a parameter". Then:
 
-### patch: Replacing Objects on the Fly
+-   `Mock()` creates an object where **any** attribute or method exists automatically.
+-   `service.charge.return_value = True` says "when the test calls `service.charge(...)`, return `True`".
+-   `assert_called_once_with(100)` checks: "method `charge` was called exactly once with the argument `100`". That's the difference between a Mock and a Stub: the test doesn't just get data, it verifies **how** the code used the dependency.
 
-`patch` allows you to replace objects within a specific module with mocks for the duration of a test. This is very useful when you cannot easily pass the mock as an argument (e.g., if the object is created inside the function under test or imported globally).
+## patch: replace an already existing object
 
-`patch` can be used as a decorator or a context manager.
+`Mock()` is good when the dependency is passed into the function as an argument. But often code uses an imported object directly (e.g. `requests.get`). Then you need `patch`: it temporarily swaps something in the code for a mock:
 
 ```python
-# test_patch_example.py
 from unittest.mock import patch, Mock
 
-# --- Code under test (usually in another file) ---
+# code under test
 import requests
-def get_external_data(item_id):
-    # This function makes a real network request
-    print(f"\nCalling requests.get for {item_id}...") # Keep print to show it WON'T run in the test
-    response = requests.get(f"https://api.example.com/items/{item_id}")
+
+def get_user(user_id):
+    response = requests.get(f"https://api.example.com/users/{user_id}")
     if response.status_code == 200:
         return response.json()
     return None
-# --- End of code under test ---
 
-#### Using patch as a decorator
-
-@patch('__main__.requests.get') # Patch requests.get in the current module where it's used
-def test_get_external_data_with_decorator(mock_requests_get):
-    # Configure the mock passed into mock_requests_get
-    print("\nRunning test_get_external_data_with_decorator")
+# test
+@patch("requests.get")
+def test_get_user(mock_get):
+    # configure what requests.get(...) returns
     mock_response = Mock()
     mock_response.status_code = 200
-    mock_response.json.return_value = {"id": 1, "name": "Test Item"}
-    mock_requests_get.return_value = mock_response
+    mock_response.json.return_value = {"id": 1, "name": "Anna"}
+    mock_get.return_value = mock_response
 
-    data = get_external_data(1)
+    user = get_user(1)
 
-    assert data == {"id": 1, "name": "Test Item"}
-    mock_requests_get.assert_called_once_with("https://api.example.com/items/1")
-
-#### Using patch as a context manager
-
-def test_get_external_data_with_context_manager():
-    print("\nRunning test_get_external_data_with_context_manager")
-    with patch('__main__.requests.get') as mock_requests_get_cm:
-        mock_response = Mock()
-        mock_response.status_code = 404
-        mock_requests_get_cm.return_value = mock_response
-
-        data = get_external_data(2)
-
-        assert data is None
-        mock_requests_get_cm.assert_called_once_with("https://api.example.com/items/2")
-
-#### Patching object methods with patch.object
-
-# --- Code under test ---
-class ReportGenerator:
-    def _get_user_stats(self, user_id):
-        # Simulate a complex/slow call
-        raise NotImplementedError("Don't call the real method in tests!")
-
-    def generate_report(self, user_id):
-        stats = self._get_user_stats(user_id)
-        return f"User {user_id}: Logins - {stats['logins']}, Spent - {stats['spent']}"
-# --- End of code under test ---
-
-@patch.object(ReportGenerator, '_get_user_stats') # Patch a method of a specific class
-def test_generate_report_patches_object_method(mock_get_stats):
-    print("\nRunning test_generate_report_patches_object_method")
-    mock_get_stats.return_value = {"logins": 10, "spent": 50} # Simplified data for the test
-
-    generator = ReportGenerator()
-    report = generator.generate_report(user_id=123)
-
-    assert report == "User 123: Logins - 10, Spent - 50"
-    mock_get_stats.assert_called_once_with(123)
+    assert user == {"id": 1, "name": "Anna"}
+    mock_get.assert_called_once_with("https://api.example.com/users/1")
 ```
 
-**Important when using `patch`**: The target string for patching should be where the object is _looked up_ (imported and used), not necessarily where it's defined.
+A few things to note:
 
-### side_effect: Simulating Errors and Sequential Calls
+-   `@patch("requests.get")` swaps `requests.get` for a mock only for the duration of the test. After the test, everything is restored.
+-   The `mock_get` argument (any name works) is the auto-created mock that replaced the original. You configure behaviour and check calls on it.
+-   `response.json()` is a **method** (with parentheses), so we configure `mock_response.json.return_value`. The nested mock `json` has its own `return_value`. Any attribute or method of a mock is itself a mock — it chains.
 
-The `side_effect` attribute of a mock allows simulating more complex behavior:
+`patch` also works as a **context manager** (`with patch(...) as mock_get:`), handy when the swap is needed only for part of the test.
 
--   **Raising an exception**: Assigning an exception (e.g., `ConnectionError`) to `side_effect` will make the mock raise that exception when called.
--   **Returning different values on sequential calls**: Assigning an iterable (e.g., a list) to `side_effect` will make the mock return the next item from the iterable on each call.
--   **Calling a function**: Assigning a function to `side_effect` will cause that function to be called instead of the mock.
+## The main pitfall: which path to put in patch
+
+The most common mistake with `patch` is the path. The rule: **patch where the object is used, not where it's defined**.
+
+Say our `get_user` lives in `app.py`. If the code imports the whole module:
+
+```python
+# app.py
+import requests
+
+def get_user(user_id):
+    return requests.get(f"https://api.example.com/users/{user_id}")
+```
+
+Then the test patches `"requests.get"` and it works, because `app.py` accesses the function through the `requests` module itself:
+
+```python
+@patch("requests.get")   # OK
+def test_get_user(mock_get):
+    ...
+```
+
+But if the code uses `from requests import get`:
+
+```python
+# app.py
+from requests import get
+
+def get_user(user_id):
+    return get(f"https://api.example.com/users/{user_id}")
+```
+
+Then patching `"requests.get"` is **useless**. After the `from ... import`, `app.py` has its own local reference `get` that points at the original function. A patch on the `requests` module doesn't touch it. You have to patch at the usage site:
+
+```python
+@patch("app.get")    # patch where get is called from
+def test_get_user(mock_get):
+    ...
+```
+
+Mnemonic: **"patch where it's looked up"** — wherever the code under test looks for the function, that's where you patch.
+
+## side_effect: simulating errors
+
+Sometimes you need to check that the code reacts correctly to a dependency failure (e.g. a `ConnectionError`). Mocks support that via `side_effect`:
 
 ```python
 from unittest.mock import Mock
 
-# 1. Simulate an exception
 mock_api = Mock()
-mock_api.connect.side_effect = ConnectionError("Failed to connect to API")
+mock_api.connect.side_effect = ConnectionError("network down")
 
-try:
-    mock_api.connect()
-except ConnectionError as e:
-    print(f"Caught expected error: {e}")
-
-# 2. Sequential return values
-mock_db_reader = Mock()
-mock_db_reader.read_row.side_effect = [
-    {"id": 1, "data": "A"},
-    {"id": 2, "data": "B"},
-    None # Simulate end of data
-]
-
-print(mock_db_reader.read_row()) # Returns {"id": 1, "data": "A"}
-print(mock_db_reader.read_row()) # Returns {"id": 2, "data": "B"}
-print(mock_db_reader.read_row()) # Returns None
-
-# 3. Execute a function
-def custom_side_effect(*args, **kwargs):
-    user_id = kwargs.get("user_id", 0)
-    print(f"-> custom_side_effect called for user_id={user_id}")
-    return "Admin" if user_id == 1 else "Guest"
-
-mock_user_service = Mock()
-mock_user_service.get_user_type.side_effect = custom_side_effect
-
-print(mock_user_service.get_user_type(user_id=1))
-print(mock_user_service.get_user_type(user_id=2))
+# now mock_api.connect() raises ConnectionError
 ```
 
-### Usage with pytest and the mocker Fixture
+The same `side_effect` also accepts a function or a list of values (for sequential calls returning different things), but those are rarer cases.
 
-While `unittest.mock` is part of the standard library, the `pytest-mock` plugin is often used for more convenient integration with `pytest`. It provides the `mocker` fixture, which is a wrapper around `unittest.mock.patch` and simplifies some scenarios.
+## The main rule
 
-```bash
-# pip install pytest-mock (if not already installed)
-```
+Mocks are convenient but tricky: it's easy to start mocking the **internals** of your own code, and then your tests check implementation instead of behaviour. Any refactor breaks them even though the code still works.
 
-```python
-# test_pytest_mocker.py
-# (assuming get_external_data is defined as in the previous patch example)
+Rule: **mock the boundaries of the system**: external APIs, the DB, the filesystem, time. Test your own code directly, without mocks.
 
-# --- Code from module_to_test.py for self-sufficiency ---
-import requests
-def get_external_data(item_id):
-    response = requests.get(f"https://api.example.com/items/{item_id}")
-    if response.status_code == 200:
-        return response.json()
-    return None
-# --- End of code from module_to_test.py ---
+## What's next?
 
-def test_get_external_data_with_mocker(mocker): # mocker is the pytest-mock fixture
-    # Use mocker.patch instead of unittest.mock.patch
-    mock_requests_get = mocker.patch('__main__.requests.get')
-
-    mock_response = Mock() # Can still use unittest.mock.Mock directly
-    mock_response.status_code = 200
-    mock_response.json.return_value = {"id": 10, "name": "Mocked Item"}
-    mock_requests_get.return_value = mock_response
-
-    data = get_external_data(10)
-    assert data == {"id": 10, "name": "Mocked Item"}
-    mock_requests_get.assert_called_once_with("https://api.example.com/items/10")
-
-# mocker also has convenience methods like mocker.stub()
-class EmailSender:
-    def send(self, to, body):
-        # Real email sending
-        raise NotImplementedError("Don't send real emails in tests!")
-
-def test_email_sending_logic(mocker):
-    sender_instance = EmailSender()
-    # mocker.patch.object() is similar to unittest.mock.patch.object()
-    mock_send_method = mocker.patch.object(sender_instance, 'send')
-    mock_send_method.return_value = True # Configure send to return True
-
-    # Code under test that uses sender_instance.send(...)
-    # For example:
-    # result = process_user_notification(user_id=1, email_sender=sender_instance)
-    # assert result is True
-
-    # For the example, just call it directly
-    assert sender_instance.send("test@example.com", "Hello") == True
-    mock_send_method.assert_called_once_with("test@example.com", "Hello")
-```
-
-The `mocker` fixture provides convenient access to `patch` functionality without needing to import `patch` directly in every test file.
-
-## Best Practices for Using Mocks and Stubs
-
-1.  **Mock Boundaries, Not Internals**: Try to mock only what's at the boundary of your system or module (external APIs, direct DB access, file system). Avoid mocking too many internal details of your own code, otherwise, tests become brittle and test the implementation rather than the behavior.
-2.  **Test Behavior, Not Implementation**: Mocks help verify that your code _correctly uses_ its dependencies, not how those dependencies are implemented internally.
-3.  **One Mock per Behavior**: Aim for a single mock to simulate one specific behavior or aspect of a dependency.
-4.  **Keep Mocks Simple**: The simpler the mock, the easier the test is to understand.
-5.  **Use `patch` Judiciously**: Use `patch` thoughtfully. Overusing `patch` can make tests complex to understand and maintain, as it becomes unclear what code is actually running.
-6.  **Prefer Dependency Injection**: If possible, design your code so dependencies can be easily passed into functions or classes (e.g., via constructor or method arguments). This often simplifies testing and reduces the need for `patch`.
-
-## What's Next?
-
-Now that you know how to isolate dependencies using mocks and stubs, your tests will become more reliable, faster, and focused on verifying specific logic.
-
-In the next article, we will explore Python's built-in `unittest` framework, which also heavily utilizes mocking concepts.
+Next: the built-in **`unittest`** module, classic xUnit style with `TestCase` classes and `setUp`/`tearDown`. It's the alternative to pytest you'll meet in legacy code.
 
 ---
 
-**Which statement about mocks and stubs in Python is correct?**
+**What is true about mocks and stubs in Python?**
+

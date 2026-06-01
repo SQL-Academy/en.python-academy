@@ -1,63 +1,66 @@
 # Decorators in Python
 
-Today we'll explore one of Python's most powerful and elegant features — decorators. They allow you to modify or enhance functions and methods without changing their source code! Think of decorators as special wrappers that add extra functionality to your code. 🎁
-
-## What are Decorators?
-
-> A decorator is a special kind of function that takes another function as input, extends or modifies its behavior, and returns the altered function without changing its source code.
-
-Decorators follow a key principle in programming — the Open/Closed Principle, which states that code should be open for extension but closed for modification. With decorators, you can add new behaviors to functions without altering their original code.
-
-## Basic Decorator Syntax
-
-The basic syntax for using a decorator is very simple — you place the `@decorator_name` line right above the function definition:
+Suppose we have several functions and we want to measure how long each one takes. We could copy the timing code into every function:
 
 ```python
+def slow_function():
+    start = time.time()
+    # ... main work
+    elapsed = time.time() - start
+    print(f"slow_function: {elapsed:.4f} s")
+
+def another_function():
+    start = time.time()
+    # ... main work
+    elapsed = time.time() - start
+    print(f"another_function: {elapsed:.4f} s")
+```
+
+It works, but next week we'll want to change the log format and we'll have to edit **every** function in turn. Plus the actual logic gets buried under boilerplate.
+
+Decorators solve exactly this: you write the wrapper once and stick it on any function with a short `@wrapper` line above its definition.
+
+## Basic syntax
+
+A decorator is a function that takes another function and returns its "wrapped" version (with added behavior):
+
+```python-executable
 def my_decorator(func):
     def wrapper():
-        print("Something happens before the function is called")
-        func()  # Call the original function
-        print("Something happens after the function is called")
+        print("Before the call")
+        func()
+        print("After the call")
     return wrapper
 
 @my_decorator
 def say_hello():
     print("Hello, world!")
 
-# Call the decorated function
 say_hello()
+# Output:
+# Before the call
+# Hello, world!
+# After the call
 ```
 
-This is equivalent to:
+Writing `@my_decorator` above `say_hello` is syntactic sugar for this equivalent:
 
 ```python
-def my_decorator(func):
-    def wrapper():
-        print("Something happens before the function is called")
-        func()
-        print("Something happens after the function is called")
-    return wrapper
-
-def say_hello():
-    print("Hello, world!")
-
-# Decorate the function manually
-decorated_hello = my_decorator(say_hello)
-
-# Call the decorated function
-decorated_hello()
+say_hello = my_decorator(say_hello)
 ```
 
-## Decorators with Arguments
+That is, we reassign `say_hello` to the new function the decorator returned. No magic — just reassignment.
 
-What if the function you're decorating takes arguments? You need to make your wrapper function accept and pass these arguments:
+## Decorator with function arguments
 
-```python
+If the wrapped function takes arguments, the wrapper has to forward them. The universal trick is `*args, **kwargs`:
+
+```python-executable
 def my_decorator(func):
     def wrapper(*args, **kwargs):
-        print("Something happens before the function is called")
-        result = func(*args, **kwargs)  # Call the original function with all arguments
-        print("Something happens after the function is called")
+        print("Before")
+        result = func(*args, **kwargs)
+        print("After")
         return result
     return wrapper
 
@@ -65,48 +68,96 @@ def my_decorator(func):
 def add(a, b):
     return a + b
 
-# Call the decorated function with arguments
-result = add(5, 3)
-print(f"Result: {result}")
+print(add(5, 3))
+# Output:
+# Before
+# After
+# 8
 ```
 
-The `*args` and `**kwargs` syntax allows the wrapper to accept any number of positional and keyword arguments, making it flexible enough to work with any function.
+`*args, **kwargs` means "accept any positional and keyword arguments", and `func(*args, **kwargs)` forwards them through. This trick makes the decorator universal — it works with any function.
 
-## Practical Examples of Decorators
+## A practical decorator: timing
 
-Let's explore a practical example of a decorator to see how it can be useful in real code.
+The very timing decorator we started with:
 
-### Timing Functions
-
-A decorator to measure how long a function takes to execute:
-
-```python
+```python-executable
 import time
 
-def timing_decorator(func):
+def timing(func):
     def wrapper(*args, **kwargs):
-        start_time = time.time()
+        start = time.time()
         result = func(*args, **kwargs)
-        end_time = time.time()
-        execution_time = end_time - start_time
-        print(f"Function {func.__name__} took {execution_time:.4f} seconds to execute")
+        elapsed = time.time() - start
+        print(f"{func.__name__}: {elapsed:.4f} s")
         return result
     return wrapper
 
-@timing_decorator
+@timing
 def calculate_sum(n):
     return sum(range(n))
 
-calculate_sum(1000000)
+calculate_sum(1_000_000)
+# Output: calculate_sum: 0.0462 s
 ```
 
-## Decorators with Parameters
+Now adding timing to any function is one line `@timing` on top. Want to change the log format? Edit the single `timing` function, not every function in the project.
 
-Sometimes you need decorators that can take their own parameters. This requires adding another level of nesting:
+## functools.wraps: preserving name and docstring
 
-```python
+A naive decorator has a quiet side effect: the wrapped function "loses" its name and documentation, because from the outside you see the `wrapper`, not the original:
+
+```python-executable
+def timing(func):
+    def wrapper(*args, **kwargs):
+        return func(*args, **kwargs)
+    return wrapper
+
+@timing
+def calculate_sum(n):
+    """Sums numbers from 0 to n."""
+    return sum(range(n))
+
+print(calculate_sum.__name__)
+# Output: wrapper
+print(calculate_sum.__doc__)
+# Output: None
+```
+
+In real code this breaks debugging, logging, and IDE introspection. It's fixed by one line — the `@functools.wraps(func)` decorator on `wrapper`:
+
+```python-executable
+from functools import wraps
+
+def timing(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        return func(*args, **kwargs)
+    return wrapper
+
+@timing
+def calculate_sum(n):
+    """Sums numbers from 0 to n."""
+    return sum(range(n))
+
+print(calculate_sum.__name__)
+# Output: calculate_sum
+print(calculate_sum.__doc__)
+# Output: Sums numbers from 0 to n.
+```
+
+Rule of thumb: writing your own decorator? Always wrap the inner function with `@wraps(func)`. It's free and preserves introspection.
+
+## Decorator with parameters
+
+Sometimes you want to pass options to the decorator itself, e.g. "repeat the call N times". This needs another level: an outer function takes the parameter and returns the "real" decorator:
+
+```python-executable
+from functools import wraps
+
 def repeat(n=1):
     def decorator(func):
+        @wraps(func)
         def wrapper(*args, **kwargs):
             result = None
             for _ in range(n):
@@ -118,22 +169,25 @@ def repeat(n=1):
 @repeat(n=3)
 def say_hi(name):
     print(f"Hi, {name}!")
-    return "Done"
 
-say_hi("Alice")
+say_hi("Anna")
+# Output:
+# Hi, Anna!
+# Hi, Anna!
+# Hi, Anna!
 ```
 
-In this example, we have three levels of functions:
+Three levels of nesting looks scary, but the logic is simple:
 
-1. `repeat(n)` — takes the decorator parameter
-2. `decorator(func)` — takes the function to be decorated
-3. `wrapper(*args, **kwargs)` — handles the function call
+1. `repeat(n)` takes the decorator parameter and returns a regular decorator.
+2. `decorator(func)` takes the function and returns a wrapper.
+3. `wrapper(*args, **kwargs)` handles the actual call.
 
-## Chaining Multiple Decorators
+## Chaining decorators
 
-You can apply multiple decorators to a single function. They're executed from bottom to top (the decorator closest to the function is applied first):
+You can apply more than one decorator. They apply **bottom-up**: the one closest to the function goes first:
 
-```python
+```python-executable
 def bold(func):
     def wrapper(*args, **kwargs):
         return f"<b>{func(*args, **kwargs)}</b>"
@@ -150,81 +204,62 @@ def format_text(text):
     return text
 
 print(format_text("Hello, world!"))
+# Output: <b><i>Hello, world!</i></b>
 ```
 
-## Class Decorators
+`@italic` applies to `format_text` first — that gives an "italic function". Then `@bold` wraps it from outside — giving `bold(italic(format_text))`. So `<i>` closes first, then `<b>`.
 
-In addition to decorating functions, you can also create decorators for classes:
+## You've already met decorators
+
+Back in encapsulation we used `@property` and `@balance.setter` — those are decorators from the standard library. `@property` takes a getter function and turns it into a "computed attribute". No magic: the same mechanism we're discussing now, applied in the context of classes.
+
+## Where decorators live in the real world
+
+A few places you'll meet them most often:
+
+**Web frameworks (Flask, FastAPI, Django).** Wiring a URL to a handler function:
 
 ```python
-def add_greeting(cls):
-    # Add a new method to the class
-    cls.greet = lambda self: f"Hello from {self.__class__.__name__}"
-    return cls
-
-@add_greeting
-class Person:
-    def __init__(self, name):
-        self.name = name
-
-# Create an instance and use the added method
-person = Person("Alice")
-print(person.greet())
+@app.route('/home')
+def home():
+    return "Home page"
 ```
 
-## Real-World Use Cases for Decorators
+`@app.route` registers the function in the framework's router — without the decorator you'd have to call `app.add_url_rule(...)` for every endpoint manually.
 
-Decorators are widely used in Python and many popular frameworks:
+**Caching.** Storing results so we don't recompute the same thing:
 
-1. **Flask/Django routing** — map URLs to view functions
+```python-executable
+from functools import wraps
 
-    ```python
-    @app.route('/home')
-    def home():
-        return "Welcome to the home page!"
-    ```
+def memoize(func):
+    cache = {}
+    @wraps(func)
+    def wrapper(*args):
+        if args not in cache:
+            cache[args] = func(*args)
+        return cache[args]
+    return wrapper
 
-2. **Property decorators** — control access to attributes
+@memoize
+def fib(n):
+    if n < 2:
+        return n
+    return fib(n - 1) + fib(n - 2)
 
-    ```python
-    class Person:
-        def __init__(self, name):
-            self._name = name
+print(fib(30))
+# Output: 832040
+```
 
-        @property
-        def name(self):
-            return self._name
+Without `@memoize`, `fib(30)` would recompute the same calls millions of times and stall. With the cache — instantaneous. The standard library has this built in: `from functools import lru_cache`.
 
-        @name.setter
-        def name(self, value):
-            if not value:
-                raise ValueError("Name cannot be empty")
-            self._name = value
-    ```
+**Tests.** In pytest, `@pytest.fixture` and `@pytest.mark.parametrize` are decorators that turn a regular function into a fixture or a parametrized test.
 
-3. **Memoization/caching** — store function results to avoid repetitive calculations
+## What's next?
 
-    ```python
-    def memoize(func):
-        cache = {}
-        def wrapper(*args):
-            if args not in cache:
-                cache[args] = func(*args)
-            return cache[args]
-        return wrapper
-    ```
+Decorators are a workhorse of Python: libraries and frameworks are built on them (Flask routes, pytest fixtures, dataclasses, type checkers). Once you see that `@something` is just `func = something(func)`, the "magic" of these libraries disappears — it's all function composition underneath.
 
-4. **Rate limiting** — limit how often a function can be called
-5. **Validation** — validate inputs before processing
-6. **Authorization** — check permissions before executing functions
-
-## Understanding Check
+---
 
 **What is the primary purpose of decorators in Python?**
 
-
-## Conclusion
-
-Decorators are a powerful feature in Python that allow for elegant code organization and reuse. They help implement cross-cutting concerns like logging, authentication, and performance monitoring without cluttering the actual business logic of your functions.
-
-As you continue your Python journey, you'll find decorators are an essential tool for writing clean, maintainable, and extensible code. They're especially prevalent in Python frameworks and libraries, so understanding how they work will make you more effective in using these tools.

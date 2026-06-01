@@ -1,224 +1,139 @@
-# pytest Basics: Writing Your First Tests in Python
+# pytest basics: your first tests in Python
 
-In the previous article, we covered what testing is, why it's needed, and the different types of tests. Now it's time to get practical and meet one of the most popular testing frameworks in Python — `pytest`.
+`pytest` is the most popular Python testing framework. Its entry point is simple: you write regular Python functions with `assert`, then run `pytest` from the terminal. It auto-discovers your tests and reports what passed and what failed.
 
-## Why pytest?
-
-`pytest` has gained popularity due to several key advantages, especially important for beginners:
-
--   **Simple Syntax**: Tests use standard Python functions and plain `assert` statements. This makes test code cleaner and more understandable compared to more verbose xUnit frameworks.
--   **Automatic Test Discovery**: `pytest` automatically finds test files (default: `test_*.py` or `*_test.py`) and test functions (default: `test_*`) without needing explicit registration.
--   **Informative Output**: When tests fail, `pytest` provides detailed information that helps quickly pinpoint the cause of the problem.
--   **Powerful Ecosystem**: There are numerous plugins that extend `pytest`'s functionality (e.g., for working with web frameworks, generating coverage reports, etc.).
--   **Low Barrier to Entry**: It's easy to start writing simple tests and gradually learn more advanced features.
-
-## Getting Started with pytest
-
-### Installation
-
-If you don't have `pytest` installed yet, you can do so using pip:
+## Install
 
 ```bash
 pip install pytest
 ```
 
-### Your First Test
+## Your first test
 
-Create a file named `test_example.py`. `pytest` will automatically recognize it as a test file because of the `test_` prefix.
+Put production code in `example.py`, and put tests in a file next to it with a `test_` prefix. pytest finds tests by that prefix automatically:
 
-```python
-# test_example.py
-
-def add(x, y):
+<CodeProject
+    defaultFile="test_example.py"
+    files={[
+        {
+            path: 'example.py',
+            content: `def add(x, y):
     return x + y
+`,
+        },
+        {
+            path: 'test_example.py',
+            content: `from example import add
 
-def test_add_positive_numbers():
+def test_add_positive():
     assert add(1, 2) == 3
 
-def test_add_negative_numbers():
+def test_add_negative():
     assert add(-1, -2) == -3
 
-def test_add_mixed_numbers():
+def test_add_mixed():
     assert add(5, -2) == 3
-```
+`,
+        },
+    ]}
+/>
 
-In this example:
+A test is just a function whose name starts with `test_`, with regular Python `assert` inside. No special classes, no inheritance, no registration.
 
--   We defined a simple function `add()` that we want to test.
--   We wrote three test functions: `test_add_positive_numbers()`, `test_add_negative_numbers()`, and `test_add_mixed_numbers()`. Each one checks a specific aspect of the `add()` function's behavior.
--   Inside each test function, we use the `assert` keyword followed by an expression. If the expression is true, the test passes. If it's false, the test fails.
+## Running
 
-### Running Tests
-
-Open your terminal, navigate to the directory where you saved `test_example.py`, and run the command:
+In the terminal, in the directory with your tests:
 
 ```bash
 pytest
 ```
 
-`pytest` will find all files and functions matching its naming conventions and run them. You should see output similar to this:
+pytest walks every `test_*.py` file, runs every `test_*` function inside, and prints the result:
 
 ```text
 ============================= test session starts ==============================
-platform ... -- Python ...
-plugins: ...
 collected 3 items
 
 test_example.py ...                                                      [100%]
 
-============================== 3 passed in 0.XXs ===============================
+============================== 3 passed in 0.02s ===============================
 ```
 
-A dot `.` for each test indicates that it passed successfully.
-
-For more detailed output, use the `-v` (verbose) flag:
+The dot `.` next to the filename means "one test passed". Three dots = three passed. For per-test output use `-v`:
 
 ```bash
 pytest -v
 ```
 
-The output will include the names of the executed tests:
+```text
+test_example.py::test_add_positive PASSED                                [ 33%]
+test_example.py::test_add_negative PASSED                                [ 66%]
+test_example.py::test_add_mixed PASSED                                   [100%]
+```
+
+## When a test fails
+
+Let's break a test on purpose (`assert add(5, -2) == 10`, obviously wrong) and run `pytest`:
 
 ```text
-============================= test session starts ==============================
-platform ... -- Python ...
-plugins: ...
-collected 3 items
-
-test_example.py::test_add_positive_numbers PASSED                        [ 33%]
-test_example.py::test_add_negative_numbers PASSED                        [ 66%]
-test_example.py::test_add_mixed_numbers PASSED                           [100%]
-
-============================== 3 passed in 0.XXs ===============================
-```
-
-You can also tell `pytest` to run tests only from a specific file:
-
-```bash
-pytest test_example.py -v
-```
-
-## Understanding pytest Output: Success vs. Failure
-
-It's important to be able to read `pytest` output, especially when tests fail.
-
-### Successful Test
-
-As we saw, successful tests are marked with a dot `.` (in normal mode) or the word `PASSED` (in `-v` mode).
-
-### Failing Test
-
-Let's intentionally break one of our tests in `test_example.py`:
-
-```python
-# test_example.py (with an error)
-
-def add(x, y):
-    return x + y
-
-def test_add_positive_numbers():
-    assert add(1, 2) == 3
-
-def test_add_negative_numbers():
-    assert add(-1, -2) == -3
-
-def test_add_mixed_numbers_failed(): # Changed name for clarity and introduced an error
-    assert add(5, -2) == 10 # Expected 3, but wrote 10
-```
-
-Now, let's run `pytest -v`:
-
-```text
-============================= test session starts ==============================
-collected 3 items
-
-test_example.py::test_add_positive_numbers PASSED                        [ 33%]
-test_example.py::test_add_negative_numbers PASSED                        [ 66%]
-test_example.py::test_add_mixed_numbers_failed FAILED                    [100%]
+test_example.py::test_add_mixed FAILED                                   [100%]
 
 =================================== FAILURES ===================================
-______________________ test_add_mixed_numbers_failed _______________________
+______________________________ test_add_mixed __________________________________
 
-    def test_add_mixed_numbers_failed(): # Changed name for clarity and introduced an error
->       assert add(5, -2) == 10 # Expected 3, but wrote 10
+    def test_add_mixed():
+>       assert add(5, -2) == 10
 E       assert 3 == 10
 E        +  where 3 = add(5, -2)
 
-test_example.py:14: AssertionError
-=========================== short test summary info ============================
-FAILED test_example.py::test_add_mixed_numbers_failed - assert 3 == 10
-========================= 1 failed, 2 passed in 0.XXs ==========================
+test_example.py:9: AssertionError
 ```
 
-What we see in the output for the failed test:
+pytest shows:
 
-1.  **`FAILED`**: The status of the test.
-2.  **`FAILURES` Section**: Detailed information about each failed test.
-3.  **Traceback**: The path to the line in the code where the error occurred (`test_example.py:14: AssertionError`).
-4.  **`E assert 3 == 10`**: `pytest` shows exactly what went wrong. It calculated `add(5, -2)` as `3` and compared it to `10`. Since `3 == 10` is false, the `assert` failed.
-5.  **`short test summary info`**: A brief summary of the number of failed and passed tests.
+-   **where** it failed (`test_example.py:9: AssertionError`)
+-   **which expression** broke (`assert add(5, -2) == 10`)
+-   **what came out instead** (`3 == 10`, and that `3 = add(5, -2)`)
 
-This detailed output is very helpful for debugging.
+That detailed output usually tells you the cause immediately. This is the main argument for plain `assert` over special methods: pytest inspects the expression and shows the interesting parts.
 
-## Organizing Tests
+## Test structure: Arrange / Act / Assert
 
-As your project grows, the number of tests will increase. `pytest` offers several ways to organize them.
+As tests get bigger, a pattern that hugely helps readability is **AAA (Arrange / Act / Assert)**:
 
-### Test Files
-
-As mentioned, `pytest` automatically discovers files whose names start with `test_` or end with `_test.py`.
-
-### Test Functions
-
-Inside these files, `pytest` looks for functions whose names start with `test_`.
-
-### Grouping Tests in Classes
-
-For better organization, you can group related tests into classes. The names of such classes should start with `Test`.
+1. **Arrange**: prepare data, create objects, set up state.
+2. **Act**: do the thing you're actually testing.
+3. **Assert**: verify the outcome.
 
 ```python
-# test_calculator.py
+def test_user_can_change_email():
+    # Arrange
+    user = User("Anna", "old@example.com")
 
-class Calculator:
-    def add(self, x, y):
-        return x + y
+    # Act
+    user.change_email("new@example.com")
 
-    def subtract(self, x, y):
-        return x - y
-
-# Group tests for the calculator in a class
-class TestCalculator:
-    def test_add(self):
-        calc = Calculator()
-        assert calc.add(2, 3) == 5
-        assert calc.add(-1, 1) == 0
-
-    def test_subtract(self):
-        calc = Calculator()
-        assert calc.subtract(5, 3) == 2
-        assert calc.subtract(2, 5) == -3
-
-# You can also have tests outside the class in the same file
-def test_outside_class():
-    assert True
+    # Assert
+    assert user.email == "new@example.com"
 ```
 
-Note that these classes do not need to inherit from any special base class (unlike `unittest.TestCase`, which we will discuss later). `pytest` will discover them and execute all `test_*` methods inside.
+A simple test like `assert add(1, 2) == 3` fits on one line, and AAA isn't needed there. But once a test grows beyond 3-4 lines, splitting it into three blocks (with comments or just blank lines) makes it readable at a glance. It's the de facto standard in production code.
 
-When you run `pytest -v`, you will see:
+## Test names: what_when_expected
 
-```text
-test_calculator.py::TestCalculator::test_add PASSED
-test_calculator.py::TestCalculator::test_subtract PASSED
-test_calculator.py::test_outside_class PASSED
-```
+In real projects, the test name reads as a short statement about the code. A handy template: **`test_<what>_<under_what_conditions>_<expected_behaviour>`**:
 
-## What's Next?
+-   `test_add_returns_sum_for_positive_numbers` — clearer than `test_add_1`
+-   `test_withdraw_fails_when_balance_is_zero` — instantly tells you what and why
+-   `test_user_email_is_lowercased_after_save` — pinpoints the behaviour
 
-We've covered the very basics of `pytest`: how to write simple tests, run them, and interpret the results. This is already a powerful tool for verifying the correctness of your code.
+When such a test fails in CI, the name alone tells you **what broke**, without reading the body. That saves hours of debugging in large projects.
 
-In the next article, we will delve into more advanced and useful features of `pytest`, such as fixtures (for managing test state) and parametrization (for running one test with different data).
+## What's next?
+
+The next article covers pytest's two superpowers: **fixtures** (shared test setup) and **parametrization** (one test, many inputs).
 
 ---
 
-**Which statement about the basics of working with `pytest` is correct?**
+**Which statement about pytest basics is correct?**
+

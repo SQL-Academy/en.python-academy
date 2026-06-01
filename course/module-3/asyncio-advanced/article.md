@@ -1,248 +1,157 @@
-# Advanced asyncio in Python: Key Tools
+# Advanced asyncio in Python
 
-In the previous article, we familiarized ourselves with the basics of `asyncio`. Now, let's look at key advanced concepts often used when writing real-world asynchronous applications: asynchronous generators and context managers, queues for data exchange, basic synchronization primitives, and integration with blocking code.
+The previous article covered the basics of asyncio: `async def`, `await`, `gather`, Tasks. Here are three tools you'll reach for in real applications: queues between coroutines, synchronization, and (most importantly) running blocking code without stalling the event loop.
 
-## Asynchronous Generators (async for)
+## asyncio.Queue: passing data between coroutines
 
-Similar to regular generators, **asynchronous generators** allow iterating over a sequence of data asynchronously without loading it all into memory. They are defined with `async def` and use `yield`. They are iterated over using `async for`.
+In asyncio all coroutines run in a single thread and can share state directly. But for the **producer-consumer** pattern, a queue is more comfortable:
 
-```python-executable
+```python
 import asyncio
 
-async def async_number_generator(limit):
-    for i in range(limit):
-        await asyncio.sleep(0.5) # Simulate asynchronous operation
-        yield i
+async def producer(q):
+    for i in range(5):
+        await q.put(f"item-{i}")
+        await asyncio.sleep(0.1)
+    await q.put(None)            # stop signal
 
-async def main_gen():
-    print("Starting iteration over async generator:")
-    async for number in async_number_generator(5):
-        print(f"Received number: {number}")
-
-if __name__ == "__main__":
-    # Ensure the example runs from the main thread
-    # or use the appropriate asyncio startup method for your environment.
-    try:
-        asyncio.run(main_gen())
-    except RuntimeError as e:
-        # In some environments (like Jupyter), get_event_loop() might be needed
-        if "cannot run current event loop" in str(e):
-             print("asyncio.run() failed. Try a different method to run the event loop.")
-        else:
-             raise e
-
-```
-
-`async for` will wait (`await`) to receive each next element from the asynchronous generator.
-
-## Asynchronous Context Managers (async with)
-
-Context managers (`with`) are useful for managing resources. **Asynchronous context managers** extend this for asynchronous operations. They implement `__aenter__` and `__aexit__` methods (which can be `async`) and are used with `async with`.
-
-```python-executable
-import asyncio
-
-class AsyncResource:
-    def __init__(self, name):
-        self.name = name
-
-    async def __aenter__(self): # Asynchronous entry
-        print(f"Resource '{self.name}': entering (acquiring resource...)")
-        await asyncio.sleep(0.5) # Simulate asynchronous operation
-        print(f"Resource '{self.name}': acquired.")
-        return self
-
-    async def __aexit__(self, exc_type, exc_val, exc_tb): # Asynchronous exit
-        print(f"Resource '{self.name}': exiting (releasing resource...)")
-        await asyncio.sleep(0.5) # Simulate asynchronous operation
-        print(f"Resource '{self.name}': released.")
-        if exc_type:
-            print(f"An exception occurred: {exc_val}")
-        # return True # If True, the exception will be suppressed
-
-async def use_async_resource():
-    async with AsyncResource("DB_Connection") as resource:
-        print(f"Using resource '{resource.name}'...")
-        await asyncio.sleep(1)
-        print("Finished using resource.")
-
-# The if __name__ == "__main__" block and try/except are similar to the previous example
-if __name__ == "__main__":
-    try:
-        asyncio.run(use_async_resource())
-    except RuntimeError as e:
-        if "cannot run current event loop" in str(e):
-             print("asyncio.run() failed. Try a different method to run the event loop.")
-        else:
-             raise e
-```
-
-## Working with Network Protocols and Streams
-
-`asyncio` provides a low-level API for working with network data streams (TCP) via `StreamReader` and `StreamWriter`, obtainable through `asyncio.open_connection` and `asyncio.start_server`. This allows creating asynchronous TCP clients and servers for any protocol.
-
-However, for standard protocols like HTTP/HTTPS, it's usually more convenient to use high-level libraries built on `asyncio`, such as:
-
--   **`aiohttp`**: A popular library for creating asynchronous HTTP clients and servers.
--   **`httpx`**: A modern HTTP client that supports both synchronous and asynchronous requests.
-
-These libraries abstract the details of working with Streams, providing a simpler interface for web interactions.
-
-## Asynchronous Queues (asyncio.Queue)
-
-`asyncio.Queue` is the primary way to safely exchange data between different asynchronous tasks (`Task`) within the same event loop. The API is similar to `queue.Queue` but uses `await`.
-
--   `await queue.put(item)`: Add an item.
--   `await queue.get()`: Remove an item (waits if the queue is empty).
--   `queue.task_done()` / `await queue.join()`: For coordinating the completion of item processing.
-
-```python-executable
-import asyncio
-import random
-
-async def producer_async(q, n_items):
-    for i in range(n_items):
-        item = f"AsyncItem-{i}"
-        await asyncio.sleep(random.uniform(0.1, 0.3))
-        await q.put(item)
-        print(f"Producer: added {item} (queue: {q.qsize()})")
-
-async def consumer_async(name, q):
+async def consumer(q):
     while True:
         item = await q.get()
-        print(f"Consumer {name}: got {item}")
-        await asyncio.sleep(random.uniform(0.2, 0.5)) # Simulate processing
-        q.task_done()
-        print(f"Consumer {name}: processed {item}")
+        if item is None:
+            break
+        print(f"Got {item}")
 
-async def main_queue():
-    q = asyncio.Queue(maxsize=3) # Queue with a size limit
+async def main():
+    q = asyncio.Queue()
+    await asyncio.gather(producer(q), consumer(q))
 
-    # Start producers and consumers as tasks
-    producers = [asyncio.create_task(producer_async(q, 5)) for _ in range(2)]
-    consumers = [asyncio.create_task(consumer_async(f"C-{i}", q)) for i in range(3)]
-
-    # Wait for producers to add all items
-    await asyncio.gather(*producers)
-    print("-- Producers finished --")
-
-    # Wait for consumers to process all items in the queue
-    await q.join()
-    print("-- All items processed --")
-
-    # Gracefully stop consumers (since they are in an infinite loop)
-    for c in consumers:
-        c.cancel()
-
-    # Allow tasks to handle cancellation
-    await asyncio.gather(*consumers, return_exceptions=True)
-    print("-- Consumers stopped --")
-
-# The if __name__ == "__main__" block and try/except are similar to previous examples
-if __name__ == "__main__":
-    try:
-        asyncio.run(main_queue())
-    except RuntimeError as e:
-        if "cannot run current event loop" in str(e):
-             print("asyncio.run() failed. Try a different method to run the event loop.")
-        else:
-             raise e
+asyncio.run(main())
 ```
 
-## Synchronization Primitives in asyncio
+The API mirrors `queue.Queue`, but the methods are coroutines (`await q.put`, `await q.get`). The queue blocks on an empty `get()` or a full `put()` (if `maxsize` is set), but it doesn't block the thread; it yields to the event loop.
 
-To coordinate coroutines and protect shared resources, `asyncio` provides analogues to the primitives in `threading`, but adapted for asynchronicity (they yield control to the event loop instead of blocking the thread).
+## asyncio.Lock: protecting shared state
 
-The most basic is **`asyncio.Lock`**. It ensures that only one coroutine can execute code within an `async with lock_async:` block. It's used to protect critical sections.
+In asyncio, switching only happens at `await`. If a critical section between two `await`s changes shared state, no other coroutine can sneak in. But if there's an `await` inside the critical section, another coroutine can.
 
-```python-executable
+```python
 import asyncio
 
-shared_counter_async = 0
-lock_async = asyncio.Lock()
+counter = 0
+lock = asyncio.Lock()
 
-async def increment_async(n_times):
-    global shared_counter_async
-    for _ in range(n_times):
-        async with lock_async: # Acquire the lock
-            # Critical section: only one coroutine can be here at a time
-            current_val = shared_counter_async
-            await asyncio.sleep(0.001) # Simulate work within the section
-            shared_counter_async = current_val + 1
-        # Lock is automatically released upon exiting async with
+async def increment():
+    global counter
+    async with lock:
+        current = counter
+        await asyncio.sleep(0.01)     # await INSIDE the critical section
+        counter = current + 1
 
-async def main_lock_example():
-    tasks = [increment_async(1000) for _ in range(5)] # Reduced count for speed
-    await asyncio.gather(*tasks)
-    print(f"Final counter (expected 5000): {shared_counter_async}")
+async def main():
+    await asyncio.gather(*(increment() for _ in range(100)))
+    print(counter)        # 100 — correct thanks to the lock
 
-# The if __name__ == "__main__" block and try/except are similar to previous examples
-if __name__ == "__main__":
-    try:
-        asyncio.run(main_lock_example())
-    except RuntimeError as e:
-        if "cannot run current event loop" in str(e):
-             print("asyncio.run() failed. Try a different method to run the event loop.")
-        else:
-             raise e
+asyncio.run(main())
 ```
 
-Other primitives like `asyncio.Event` (for signaling between coroutines), `asyncio.Semaphore` (to limit concurrent access to a resource), and `asyncio.Condition` (for more complex synchronization) are also available but used less frequently than `Lock` and `Queue`.
+Without the lock several coroutines would read the same `current` value, and the total would come out below 100. With `async with lock:` only one coroutine can sit inside the critical section at a time.
 
-## Running Blocking Code in asyncio
+In real asyncio code, locks are needed **rarely**, because most variables live inside a single coroutine. `Lock` is useful when several coroutines read/write a shared structure or resource — for example, a shared counter of active connections or a cache.
 
-What if you need to call a function that blocks the thread (e.g., a legacy library or a CPU-bound calculation) from asynchronous code? Calling it directly will block the entire event loop. The solution is `loop.run_in_executor()`.
+Besides `Lock` there's `asyncio.Event`, `asyncio.Semaphore`, `asyncio.Condition` (API mirrors `threading`, but operations go through `await`).
 
-This function allows executing a blocking function in a separate thread (using `ThreadPoolExecutor` by default) or process (`ProcessPoolExecutor`), without stopping the `asyncio` event loop.
+## Blocking code in asyncio: run_in_executor
 
-```python-executable
+The cardinal rule of asyncio: **never call blocking functions directly**. `time.sleep(2)`, `requests.get()`, heavy math — anything blocking stalls the event loop and freezes every other coroutine.
+
+But sometimes there's no avoiding it: an old synchronous library, a CPU-bound calculation. For that there's `loop.run_in_executor()`: run a blocking function in a **separate thread** (or process) while the event loop keeps going.
+
+```python
 import asyncio
 import time
-import concurrent.futures
-import threading # Added import
 
-def blocking_io_operation(duration):
-    print(f"[Thread {threading.current_thread().name}] Blocking operation: starting, sleeping {duration} sec...")
-    time.sleep(duration) # Regular, blocking sleep
-    print(f"[Thread {threading.current_thread().name}] Blocking operation: finished.")
-    return f"Result from {duration} sec."
+def blocking_io():
+    print("Blocking function: sleeping 2s")
+    time.sleep(2)                    # synchronous sleep
+    return "done"
 
-async def main_blocking():
-    loop = asyncio.get_running_loop() # Get the current event loop
+async def main():
+    loop = asyncio.get_running_loop()
+    print("Submitting blocking task to executor")
 
-    print("Starting blocking operation in executor...")
+    # None = default executor (ThreadPoolExecutor)
+    future = loop.run_in_executor(None, blocking_io)
 
-    # Run blocking_io_operation in the default ThreadPoolExecutor
-    # The first argument None means use the default executor
-    result_future = loop.run_in_executor(None, blocking_io_operation, 2)
-
-    # While the blocking operation runs in another thread,
-    # asynchronous code can continue:
-    print("Async code runs CONCURRENTLY with the blocking operation...")
+    # while the blocking task runs, the event loop is free
     await asyncio.sleep(1)
-    print("Async code is still running...")
+    print("Event loop is still working")
 
-    # Wait for the result from the executor
-    result = await result_future
-    print(f"Received result from executor: {result}")
+    result = await future
+    print(f"Result: {result}")
 
-# The if __name__ == "__main__" block and try/except are similar to previous examples
-if __name__ == "__main__":
-    try:
-        asyncio.run(main_blocking())
-    except RuntimeError as e:
-        if "cannot run current event loop" in str(e):
-             print("asyncio.run() failed. Try a different method to run the event loop.")
-        else:
-             raise e
+asyncio.run(main())
 ```
 
-## What's Next?
+`run_in_executor(None, func, *args)` submits `func(*args)` to the default `ThreadPoolExecutor` (the very same one we met in the threads-and-processes article) and returns a future you can `await`.
 
-We have reviewed key advanced `asyncio` tools: `async for`, `async with`, `asyncio.Queue`, `asyncio.Lock`, and `run_in_executor`. They form the basis for building most real-world asynchronous applications in Python.
+For CPU-bound work, pass a `ProcessPoolExecutor` as the first argument; the function will run in a separate process with its own GIL.
 
-In the final article, we will compare all the concurrency approaches discussed (`threading`, `multiprocessing`, `asyncio`), discuss `concurrent.futures`, and review general best practices.
+## async iteration and context managers
+
+If an object produces data incrementally (over the network, say), it can be an **async iterator** iterable via `async for`:
+
+```python
+async for line in aiohttp_response:
+    process(line)
+```
+
+If a resource needs to be opened and closed asynchronously (a DB connection), use an **async context manager** with `async with`:
+
+```python
+async with aiohttp.ClientSession() as session:
+    async with session.get(url) as response:
+        data = await response.json()
+```
+
+You'll rarely write these yourself; they're tools libraries (`aiohttp`, `asyncpg`, `aioredis`) expose. It's enough to know they exist and to recognize `async for` / `async with` in other people's code.
+
+## Comparing the three approaches
+
+| | threading | multiprocessing | asyncio |
+| --- | --- | --- | --- |
+| CPU parallelism | no (GIL) | yes | no (1 thread) |
+| I/O-bound | good | good but expensive | great |
+| Overhead | low | high | minimal |
+| Memory | shared | isolated | shared (1 thread) |
+| Sharing data | variables + Lock / Queue | Queue, Pipe, Manager | variables / asyncio.Queue |
+| Thousands of tasks | poor | very poor | excellent |
+
+**Rule of thumb:**
+
+-   Thousands of network connections, new projects → **asyncio**
+-   I/O in legacy synchronous code without async libraries → **threading** or `ThreadPoolExecutor`
+-   Heavy computation → **multiprocessing** or `ProcessPoolExecutor`
+-   Real apps often mix all three: asyncio as the main layer + `run_in_executor` with a thread/process pool for blocking pieces.
+
+## A few pitfalls
+
+-   **CPU-bound in asyncio** kills the event loop. Use `run_in_executor` with a `ProcessPoolExecutor` for heavy math inside async code.
+-   **Forgotten `await`**: `asyncio.sleep(1)` without `await` does nothing (it creates a coroutine that gets discarded). Modern IDEs highlight this.
+-   **Mixing sync/async**: calling `requests.get()` (synchronous) inside asyncio stalls everything. Use `aiohttp` or `httpx` for async HTTP.
+-   **`if __name__ == "__main__":`** on Windows and macOS is required for `multiprocessing`; otherwise child processes recursively spawn themselves.
+
+## What's next?
+
+That wraps up the concurrency module. The key rule: pick the tool by task type.
+
+-   Thousands of network connections → **asyncio**
+-   I/O in legacy code → **threading**
+-   Math and data crunching → **multiprocessing**
+
+In modern apps the main program tends to be asyncio, with CPU-heavy pieces offloaded into a process pool through `run_in_executor`.
 
 ---
 
-**Which asyncio function is used to safely execute blocking code without stopping the event loop?**
+**Which asyncio tool runs blocking code without stalling the event loop?**
+

@@ -1,260 +1,231 @@
-# SQLAlchemy ORM: Object-Relational Mapping in Python
+# SQLAlchemy ORM: database access through Python objects
 
-We've learned SQLAlchemy Core — a powerful way to work with SQL through Python code. Now let's get acquainted with **SQLAlchemy ORM** — an even more convenient approach where database tables become Python classes and records become objects.
+In Core we built SQL from Python expressions: `select(tasks).where(tasks.c.id == 1)`. That's a huge step up from raw SQL strings, but the code still talks in terms of "tables + columns" rather than familiar objects.
 
-## What is ORM?
+**ORM** (Object-Relational Mapping) takes one more step: a table is described as a Python class, a row of that table is an instance of that class, and changing an object's attribute is automatically reflected in the database. The result is working with the DB in the language of regular Python objects.
 
-**ORM (Object-Relational Mapping)** is a technology that connects objects in code with records in the database. Instead of writing SQL queries, you work with regular Python objects.
+## The model: a class as a table
 
-### Main Idea
+In SQLAlchemy 2.0+ models are declared with `DeclarativeBase` and type annotations. This modern style replaces the older `declarative_base()`:
 
-**Without ORM (SQLAlchemy Core):**
-
-```python
-# Create SQL query to get user
-select_query = select(users_table).where(users_table.c.id == 1)
-result = connection.execute(select_query)
-user_row = result.fetchone()
-print(user_row.name)  # Work with Row object
-```
-
-**With ORM:**
-
-```python
-# Work with Python object directly
-user = session.get(User, 1)  # User is a Python class
-print(user.name)  # Access object attribute
-user.email = "new@email.com"  # Change like regular object
-session.commit()  # Save changes
-```
-
-### ORM Advantages
-
--   **Pythonic code** — work with objects, not SQL strings
--   **Automatic change tracking** — ORM knows what needs to be saved
--   **Simple table relationships** — `user.posts` instead of JOIN queries
--   **Data validation** — checks at Python class level
-
-## Why Core First, Then ORM?
-
-**Understanding basics** — Core showed how SQL queries work under the hood  
-**Control** — sometimes you need precise control over SQL  
-**Debugging** — knowing Core makes it easier to understand what ORM does  
-**Tool choice** — appropriate abstraction level for each task
-
-## Installation and Setup
-
-ORM is included in the main SQLAlchemy package:
-
-```bash
-pip install sqlalchemy
-```
-
-## Creating Models
-
-In ORM, tables are described as Python classes. Let's start with a simple example:
-
-### Step 1: Basic Setup
-
-```python
+```python-executable
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
-# Base class for all models
-Base = declarative_base()
+class Base(DeclarativeBase):
+    pass
 
-# Database connection
-engine = create_engine('sqlite:///orm_tasks.db')
-
-print("✅ Basic setup ready!")
-
-```
-
-### Step 2: Creating Model
-
-```python
-from sqlalchemy import Column, Integer, String, Boolean
-
-# Model = Python class = table in DB
 class Task(Base):
-    __tablename__ = 'tasks'  # Table name
+    __tablename__ = 'tasks'
 
-    # Table fields as class attributes
-    id = Column(Integer, primary_key=True)
-    title = Column(String, nullable=False)
-    completed = Column(Boolean, default=False)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    title: Mapped[str]
+    completed: Mapped[bool] = mapped_column(default=False)
 
-    # Nice object representation
     def __repr__(self):
-        status = "✅" if self.completed else "⏳"
-        return f"<Task: {status} {self.title}>"
+        return f"Task(id={self.id}, title={self.title!r}, completed={self.completed})"
 
-print("✅ Task model created!")
-
-```
-
-### Step 3: Creating Table and Session
-
-```python
-# Create table in database
+engine = create_engine('sqlite:///orm_tasks.db')
 Base.metadata.create_all(engine)
 
-# Create session for working with data
-Session = sessionmaker(bind=engine)
-session = Session()
-
-print("✅ Table created, session ready!")
-
+print("Model Task and table tasks ready")
+# Output: Model Task and table tasks ready
 ```
 
-## CRUD Operations Through ORM
+How to read this:
 
-Now let's study basic data operations. Each operation in a separate example:
+-   `class Task(Base)` — the model, a subclass of the base class
+-   `__tablename__ = 'tasks'` — the table name in the DB
+-   `id: Mapped[int] = mapped_column(primary_key=True)` — column `id`, type int, primary key
+-   `title: Mapped[str]` — column `title`, type str, NOT NULL by default
+-   `completed: Mapped[bool] = mapped_column(default=False)` — column `completed`, type bool, default `False`
 
-### CREATE: Creating Objects
+Python types (`int`, `str`, `bool`) map automatically to SQL types (`INTEGER`, `VARCHAR`, `BOOLEAN`). No separate `Column(Integer, ...)` calls like in Core.
 
-```python
-# Create objects like regular Python instances
-task1 = Task(title="Learn ORM")
-task2 = Task(title="Write code")
+## Session: unit of work
 
-# Add to session and save
-session.add_all([task1, task2])
-session.commit()
+The ORM runs queries through a `Session`. A session is a "unit of work": it holds loaded objects in memory, tracks changes, and flushes everything to the DB in one call.
 
-print("✅ CREATE: Tasks created:")
-print(f"  {task1}")
-print(f"  {task2}")
+```python-executable
+from sqlalchemy.orm import Session
 
+with Session(engine) as session:
+    # ... work with objects here
+    session.commit()
+
+print("Session closed")
+# Output: Session closed
 ```
 
-### READ: Reading Data
+`with Session(...)` closes the session on exit. `commit()` saves accumulated changes.
 
-```python
-# Get all tasks
-all_tasks = session.query(Task).all()
-print("📋 READ: All tasks:")
-for task in all_tasks:
-    print(f"  {task}")
+## CRUD through objects
 
+Going forward we assume `engine` and the `Task` class are already defined.
+
+### CREATE
+
+```python-executable
+from sqlalchemy.orm import Session
+
+with Session(engine) as session:
+    task1 = Task(title="Learn ORM")
+    task2 = Task(title="Write code")
+    session.add_all([task1, task2])
+    session.commit()
+    print(task1)
+    print(task2)
+# Output:
+# Task(id=1, title='Learn ORM', completed=False)
+# Task(id=2, title='Write code', completed=False)
 ```
 
-```python
-# Get specific task by ID
-task = session.get(Task, 1)
-print(f"🎯 Task with ID=1: {task}")
+Notice: `task1.id` is already populated after `commit()`. The DB assigned it automatically.
 
+### READ
+
+In modern SQLAlchemy 2.0 queries are written via `select()` + `session.execute()`. The old `session.query(...)` still works but is considered legacy.
+
+```python-executable
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+with Session(engine) as session:
+    # All rows
+    tasks = session.execute(select(Task)).scalars().all()
+    for task in tasks:
+        print(task)
+# Output:
+# Task(id=1, title='Learn ORM', completed=False)
+# Task(id=2, title='Write code', completed=False)
 ```
 
-### UPDATE: Updating Objects
+`.scalars()` is needed because `select(Task)` returns row-tuples (even if each tuple has one element). `.scalars()` unwraps them into `Task` instances.
 
-```python
-# Just change object attribute!
-task = session.get(Task, 1)
-task.completed = True
-task.title = "Learn ORM ✨"
+Fetching a single record by primary key is simpler via `session.get`:
 
-# Save changes
-session.commit()
+```python-executable
+from sqlalchemy.orm import Session
 
-print(f"🔄 UPDATE: {task}")
-
+with Session(engine) as session:
+    task = session.get(Task, 1)
+    print(task)
+# Output: Task(id=1, title='Learn ORM', completed=False)
 ```
 
-### DELETE: Deleting Objects
+With a filter:
 
-```python
-# Find and delete task
-task_to_delete = session.get(Task, 2)
-session.delete(task_to_delete)
-session.commit()
+```python-executable
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 
-print(f"🗑️ DELETE: Task deleted")
-
-
-# Check what's left
-remaining_tasks = session.query(Task).all()
-print(f"📋 Remaining tasks: {len(remaining_tasks)}")
-for task in remaining_tasks:
-    print(f"  {task}")
-
+with Session(engine) as session:
+    stmt = select(Task).where(Task.completed == False)
+    pending = session.execute(stmt).scalars().all()
+    for task in pending:
+        print(task)
+# Output:
+# Task(id=1, title='Learn ORM', completed=False)
+# Task(id=2, title='Write code', completed=False)
 ```
 
-### Main ORM Advantages
+### UPDATE
 
--   **Simplicity** — work with objects as usual in Python
--   **Automation** — ORM tracks changes itself
--   **Security** — protection from SQL injections out of the box
--   **Readability** — code is understandable without SQL knowledge
+The most comfortable part of ORM: change an attribute on an object and the Session figures out what to update.
 
-## Relationships Between Tables
+```python-executable
+from sqlalchemy.orm import Session
 
-ORM allows easy table linking. Let's show with a simple example:
+with Session(engine) as session:
+    task = session.get(Task, 1)
+    task.completed = True
+    session.commit()
+    print(task)
+# Output: Task(id=1, title='Learn ORM', completed=True)
+```
 
-```python
+No explicit `UPDATE ... SET ... WHERE ...`. The Session tracks changed attributes and emits the right SQL on `commit()`.
+
+### DELETE
+
+```python-executable
+from sqlalchemy.orm import Session
+
+with Session(engine) as session:
+    task = session.get(Task, 2)
+    session.delete(task)
+    session.commit()
+    print("Task deleted")
+# Output: Task deleted
+```
+
+## Relationships between tables
+
+Real schemas are connected: a user has tasks, a post has comments. The ORM describes relationships with `relationship`, and accessing related records reads like accessing a regular attribute:
+
+```python-executable
 from sqlalchemy import ForeignKey
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, Session
+from sqlalchemy import create_engine
+from typing import List
 
-# User (one) → Tasks (many)
+class Base(DeclarativeBase):
+    pass
+
 class User(Base):
     __tablename__ = 'users'
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str]
+    tasks: Mapped[List["UserTask"]] = relationship(back_populates="user")
 
-    id = Column(Integer, primary_key=True)
-    name = Column(String, nullable=False)
-
-    # Link to tasks
-    tasks = relationship("UserTask")
-
-# Task belongs to user
 class UserTask(Base):
     __tablename__ = 'user_tasks'
+    id: Mapped[int] = mapped_column(primary_key=True)
+    title: Mapped[str]
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    user: Mapped["User"] = relationship(back_populates="tasks")
 
-    id = Column(Integer, primary_key=True)
-    title = Column(String, nullable=False)
-    user_id = Column(Integer, ForeignKey('users.id'))
-
-# Create tables and data
+engine = create_engine('sqlite:///orm_users.db')
 Base.metadata.create_all(engine)
-session = Session()
 
-user = User(name="Anna")
-task1 = UserTask(title="Learn Python", user_id=1)
-task2 = UserTask(title="Write code", user_id=1)
+with Session(engine) as session:
+    anna = User(name="Anna", tasks=[
+        UserTask(title="Learn Python"),
+        UserTask(title="Write code"),
+    ])
+    session.add(anna)
+    session.commit()
 
-session.add_all([user, task1, task2])
-session.commit()
-
-# ORM magic: get related objects
-print(f"👤 User: {user.name}")
-print(f"📋 Tasks: {len(user.tasks)}")
-for task in user.tasks:
-    print(f"  - {task.title}")
-
-session.close()
-
+    user = session.get(User, anna.id)
+    print(user.name)
+    for task in user.tasks:
+        print(f"  {task.title}")
+# Output:
+# Anna
+#   Learn Python
+#   Write code
 ```
 
-**Main advantage:** `user.tasks` automatically gets related records without writing JOIN queries!
+Behind the scenes, `user.tasks` runs `SELECT ... FROM user_tasks WHERE user_id = ?`, but in code it looks like a plain attribute access. That's the central comfort of the ORM: a relational link reads as "a user has tasks".
 
-## Approach Comparison
+## Comparing the three approaches
 
-| Aspect              | Pure SQL         | SQLAlchemy Core     | SQLAlchemy ORM      |
-| ------------------- | ---------------- | ------------------- | ------------------- |
-| **Syntax**          | SQL strings      | Python functions    | Python objects      |
-| **Security**        | Manual           | Automatic           | Automatic           |
-| **Table relations** | JOIN queries     | Complex expressions | `user.tasks`        |
-| **Changes**         | UPDATE SQL       | `update().values()` | `obj.field = value` |
-| **Learning curve**  | Need to know SQL | Medium              | Simple to start     |
-| **Performance**     | Maximum          | High                | Good                |
+| Aspect                | sqlite3                | SQLAlchemy Core        | SQLAlchemy ORM       |
+| --------------------- | ---------------------- | ---------------------- | -------------------- |
+| Query                 | SQL string             | Python expression      | Python object        |
+| Injection protection  | manual via `?`         | automatic              | automatic            |
+| Cross-DB portability  | no                     | yes                    | yes                  |
+| Relationships         | hand-written JOINs     | JOIN expressions       | `user.tasks`         |
+| UPDATE                | `UPDATE ... SET ...`   | `update().values(...)` | `obj.field = ...`    |
+| SQL control           | maximum                | high                   | medium               |
 
-## What We've Learned?
+A good rule: ORM for typical business logic, Core for complex queries where you need control, raw SQL only when neither of the first two will do.
 
-Now you know SQLAlchemy ORM basics:
+## What's next?
 
-**ORM concept** — objects instead of SQL  
-**Creating models** — classes as tables  
-**CRUD through objects** — intuitive operations  
-**Table relationships** — simple work with relations
+The ORM is a tool that optimizes the **typical** cases of DB work. If 95% of your queries are "load an object, change a field, save", the ORM saves a lot of time. When you hit a complex query or a performance-critical path, drop down into Core or write SQL directly. The three layers complement each other.
 
-**Main advantage of ORM over Core?**
+---
+
+**The main advantage of ORM over Core?**
+

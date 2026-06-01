@@ -1,197 +1,186 @@
 # Working with Date and Time in Python
 
-Time is one of the most important concepts in programming. Like a skilled clockmaker who understands every movement of the mechanism, a programmer must be able to work with different time formats, account for time zones, and precisely plan events. Python provides powerful tools for working with date and time that will help you create reliable applications. ⏰
+Suppose we have a log file with lines like `2026-05-20 14:30:42 ERROR ...`, and we need to count how many errors happened in the last 24 hours. That means: parse the date string into an object, compute the difference from "now", and (if showing the user) return it in their time zone and a friendly format.
 
-## What are date and time in programming?
+These three operations — parsing a string, arithmetic, formatting — are the bread and butter of dates in Python. They all live in the standard `datetime` module.
 
-> Date and time in programming are ways to represent and manipulate temporal data, including the current moment, specific dates, time intervals, and their transformations.
+## Three classes: datetime, date, time
 
-In Python, working with date and time is mainly done through the built-in `datetime` module, which provides classes and functions for:
+The `datetime` module has three main classes, and it matters which one you pick:
 
-1. **Representing moments in time** — specific dates and times
-2. **Working with intervals** — time periods between events
-3. **Formatting and parsing** — conversion between strings and time objects
-4. **Arithmetic operations** — addition, subtraction of time periods
+-   **`datetime`**: a specific moment in time, down to microseconds. The right choice 90% of the time.
+-   **`date`**: just the date, no time. Birthdays, deadlines, order dates.
+-   **`time`**: just the time of day, no date. A meeting slot in a calendar.
 
-## The datetime module
+```python-executable
+from datetime import datetime, date, time
 
-The `datetime` module is the main tool for working with date and time in Python. It contains several important classes:
-
-### The datetime class
-
-The most used class for working with a specific moment in time:
-
-```python
-from datetime import datetime
-
-# Getting current date and time
+# A moment in time
 now = datetime.now()
-print(f"Now: {now}")
+print(now)
+# Output: 2026-05-20 14:30:25.123456
 
-# Creating a specific date
-specific_date = datetime(2024, 12, 31, 23, 59, 59)
-print(f"New Year: {specific_date}")
-
-# Getting individual components
-print(f"Year: {now.year}")
-print(f"Month: {now.month}")
-print(f"Day: {now.day}")
-print(f"Hour: {now.hour}")
-print(f"Minute: {now.minute}")
-```
-
-### The date class
-
-For working with dates only (without time):
-
-```python
-from datetime import date
-
-# Getting current date
-today = date.today()
-print(f"Today: {today}")
-
-# Creating a specific date
+# Just a date
 birthday = date(1990, 5, 15)
-print(f"Birthday: {birthday}")
+print(birthday)
+# Output: 1990-05-15
 
-# Getting day of week (0 = Monday, 6 = Sunday)
-print(f"Day of week: {today.weekday()}")
+# Just a time of day
+meeting = time(14, 30)
+print(meeting)
+# Output: 14:30:00
 ```
 
-### The time class
+All three have attributes for individual components: `.year`, `.month`, `.day`, `.hour`, `.minute`, `.second`, `.microsecond`.
 
-For working with time only (without date):
-
-```python
-from datetime import time
-
-# Creating time
-meeting_time = time(14, 30, 0)  # 14:30:00
-print(f"Meeting time: {meeting_time}")
-
-
-```
-
-## Formatting date and time
-
-### The strftime() method
-
-Converting time objects to strings using formatting directives:
-
-```python
+```python-executable
 from datetime import datetime
 
-now = datetime.now()
-
-# Various formats
-print(now.strftime("%Y-%m-%d"))
-print(now.strftime("%d.%m.%Y"))
-print(now.strftime("%A, %d %B %Y"))
-print(now.strftime("%d/%m/%Y %H:%M"))
+now = datetime(2026, 5, 20, 14, 30)
+print(now.year, now.month, now.day)
+# Output: 2026 5 20
+print(now.weekday())   # 0 = Monday, 6 = Sunday
+# Output: 2
 ```
 
-Main formatting directives:
+## Date arithmetic: timedelta
+
+You can add and subtract dates directly: the result is a `timedelta` (a duration), or a new `datetime`.
+
+```python-executable
+from datetime import datetime, timedelta
+
+now = datetime(2026, 5, 20, 14, 30)
+
+# Add an interval
+week_later = now + timedelta(days=7)
+print(week_later)
+# Output: 2026-05-27 14:30:00
+
+# Difference between moments is a timedelta
+deadline = datetime(2026, 6, 1)
+delta = deadline - now
+print(delta)
+# Output: 11 days, 9:30:00
+print(delta.days, delta.total_seconds())
+# Output: 11 985800.0
+```
+
+`timedelta` accepts `days`, `hours`, `minutes`, `seconds`, `weeks` — but **not** `months` or `years`, because their length varies (28 or 29 days in February, 365 or 366 in a year). For "add N months" the third-party library `dateutil` covers the gap.
+
+## strftime and strptime: between object and string
+
+In real code, dates constantly flow through strings — APIs, logs, databases. Mnemonic to remember which method does what:
+
+-   **`strftime`** — **f**ormat: object → string
+-   **`strptime`** — **p**arse: string → object
+
+```python-executable
+from datetime import datetime
+
+# Object → string
+now = datetime(2026, 5, 20, 14, 30)
+print(now.strftime("%d.%m.%Y %H:%M"))
+# Output: 20.05.2026 14:30
+print(now.strftime("%A, %d %B %Y"))
+# Output: Wednesday, 20 May 2026
+
+# String → object
+parsed = datetime.strptime("20.05.2026 14:30", "%d.%m.%Y %H:%M")
+print(parsed)
+# Output: 2026-05-20 14:30:00
+```
+
+The format is described by a string with directives like `%Y`, `%m`, `%d`:
 
 | Directive | Description              | Example |
 | --------- | ------------------------ | ------- |
-| `%Y`      | Year (4 digits)          | 2024    |
-| `%y`      | Year (2 digits)          | 24      |
-| `%m`      | Month (01-12)            | 01      |
-| `%B`      | Full month name          | January |
-| `%b`      | Abbreviated month name   | Jan     |
-| `%d`      | Day of month (01-31)     | 15      |
-| `%A`      | Full weekday name        | Monday  |
-| `%a`      | Abbreviated weekday name | Mon     |
+| `%Y`      | Year, 4 digits           | 2026    |
+| `%y`      | Year, 2 digits           | 26      |
+| `%m`      | Month (01-12)            | 05      |
+| `%B`      | Full month name          | May     |
+| `%b`      | Abbreviated month name   | May     |
+| `%d`      | Day of month (01-31)     | 20      |
+| `%A`      | Full weekday name        | Wed     |
+| `%a`      | Abbreviated weekday name | Wed     |
 | `%H`      | Hour (00-23)             | 14      |
 | `%I`      | Hour (01-12)             | 02      |
-| `%M`      | Minute (00-59)           | 30      |
-| `%S`      | Second (00-59)           | 25      |
+| `%M`      | Minutes (00-59)          | 30      |
+| `%S`      | Seconds (00-59)          | 25      |
 
-### The strptime() method
+## ISO 8601: the date interchange standard
 
-Parsing strings into time objects:
+When a date crosses a system boundary (API, JSON, database), use **ISO 8601**: `2026-05-20T14:30:00`. `datetime` has built-in methods for this format, and they're faster and more robust than `strftime`/`strptime`:
 
-```python
+```python-executable
 from datetime import datetime
 
-# Parsing various formats
-date1 = datetime.strptime("2024-01-15", "%Y-%m-%d")
-print(f"Date 1: {date1}")
+now = datetime(2026, 5, 20, 14, 30)
 
-date2 = datetime.strptime("15/01/2024 14:30", "%d/%m/%Y %H:%M")
-print(f"Date 2: {date2}")
+# To ISO string
+iso_string = now.isoformat()
+print(iso_string)
+# Output: 2026-05-20T14:30:00
 
-
+# And back
+parsed = datetime.fromisoformat("2026-05-20T14:30:00")
+print(parsed)
+# Output: 2026-05-20 14:30:00
 ```
 
-## Arithmetic operations with dates
+Rule of thumb: inside your program keep dates as `datetime` objects; when crossing the boundary (out to JSON or a DB) use `.isoformat()`; when reading from outside, use `fromisoformat()`. A custom `strftime` format is only needed when you're showing dates to a human.
 
-### The timedelta class
+## Time zones: naive vs aware
 
-Represents a duration — the difference between two moments:
+`datetime.now()` with no arguments returns a "naive" datetime — it has no time zone information. Common trap: the program works fine on your laptop, then runs on a server in a different country and silently shows times 7 hours off.
 
-```python
-from datetime import datetime, timedelta
+The right thing is to work with **aware** datetimes that carry a time zone. Since Python 3.9 there's a built-in `zoneinfo` module that knows real-world time zones, including daylight saving:
 
-now = datetime.now()
-print(f"Now: {now}")
+```python-executable
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
-# Adding time
-future = now + timedelta(days=7)
-print(f"In a week: {future}")
+# Aware datetimes in UTC and Moscow
+utc_now = datetime(2026, 5, 20, 14, 30, tzinfo=ZoneInfo("UTC"))
+moscow_now = utc_now.astimezone(ZoneInfo("Europe/Moscow"))
 
-# Difference between dates
-birthday = datetime(2024, 5, 15)
-time_until_birthday = birthday - now
-print(f"Days until birthday: {time_until_birthday.days} days")
+print(utc_now)
+# Output: 2026-05-20 14:30:00+00:00
+print(moscow_now)
+# Output: 2026-05-20 17:30:00+03:00
 ```
 
-## Working with time zones
+Zone names are standardized (IANA tz database): `"Europe/Moscow"`, `"America/New_York"`, `"Asia/Tokyo"`. The typical practice when storing dates in a database: always store in UTC, convert to the user's local zone only when displaying.
 
-> A time zone is a region on Earth where the same standard time is used. The world is divided into 24 time zones, each differing from the next by one hour.
-
-Time zones are important when working with users from different countries or when planning events.
-Without considering them, problems with meeting times and data processing may occur.
-
-### Basic time zone operations
-
-```python
-from datetime import datetime, timezone, timedelta
-
-# UTC
-utc_now = datetime.now(timezone.utc)
-print(f"UTC: {utc_now}")
-
-# Creating a custom time zone
-moscow_tz = timezone(timedelta(hours=3))
-moscow_time = utc_now.astimezone(moscow_tz)
-print(f"Moscow: {moscow_time}")
-```
+> Older code used the third-party `pytz` library for time zones. Since Python 3.9, `zoneinfo` is built in and covers the same use cases — `pytz` is no longer needed.
 
 ## The time module
 
-Additional time functionality:
+Beyond `datetime`, there's a lower-level `time` module. Two of its functions come up often:
 
-```python
+```python-executable
 import time
 
-# Current time in seconds since Unix epoch (January 1, 1970)
-timestamp = time.time()
-print(f"Timestamp: {timestamp}")
+# Current moment as a Unix timestamp (seconds since January 1, 1970)
+print(time.time())
+# Output: 1779373825.123456
 
-# Execution delay
+# Pause for N seconds
 print("Start")
-time.sleep(1)  # Pause for 1 second
-print("1 second passed")
+time.sleep(0.1)
+print("0.1 seconds passed")
+# Output:
+# Start
+# 0.1 seconds passed
 ```
 
-## Understanding check
+`time.time()` returns a Unix timestamp — a single number, time-zone-independent, common in databases and logs. Convert it back to a `datetime` via `datetime.fromtimestamp(ts, tz=ZoneInfo("UTC"))`.
 
-**Which class from the datetime module is used to represent a time interval?**
+## What's next?
 
+`datetime` will keep coming up: working with APIs (dates arrive as ISO 8601 strings), databases (storing event times), logging. The main rule: inside your program keep dates as objects; convert to strings only at the boundary with the outside world.
 
-## Conclusion
+---
 
-Working with date and time is a fundamental skill in programming.
-Python provides rich capabilities through the `datetime` and `time` modules, allowing elegant solutions from simple formatting to complex calculations with time zones.
+**Which class from the datetime module represents a duration of time?**
+

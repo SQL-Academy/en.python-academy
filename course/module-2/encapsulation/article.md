@@ -1,276 +1,150 @@
 # Encapsulation in Python
 
-Imagine you're designing a safe - from the outside, there's just an elegant control panel, while all the complex mechanisms and valuables are securely hidden inside. 🔐 That's how encapsulation works in Python: it allows you to hide implementation details, leaving only a convenient and secure interface for interacting with objects. Let's figure out how to create such "software safes" and why it's so important!
-
-## What is Encapsulation?
-
-> Encapsulation is an OOP principle that involves bundling the data and methods that work with it into a single object and restricting access to the internal state of the object from the external environment.
-
-In other words, encapsulation allows you to:
-
-1. **Hide** implementation details
-2. **Protect** data from uncontrolled changes
-3. **Provide** a controlled interface for working with the object
-
-Encapsulation is like using a TV remote control (interface) without knowing exactly how the TV processes your commands internally (implementation).
-
-## Access Levels in Python
-
-Unlike some strongly typed languages (Java, C++), Python doesn't have strict mechanisms for defining access levels to attributes and methods. Instead, Python follows the "we're all consenting adults here" philosophy and uses naming conventions:
-
-| Prefix                 | Access Type | Description                                             |
-| ---------------------- | ----------- | ------------------------------------------------------- |
-| No prefix              | Public      | Accessible from anywhere                                |
-| Single underscore `_`  | Protected   | Should not be used outside the class and its subclasses |
-| Double underscore `__` | Private     | Should not be used outside the class                    |
-
-### 1. Public Attributes and Methods
-
-Attributes and methods without a prefix are accessible from anywhere in the program:
-
-```python
-class Person:
-    def __init__(self, name, age):
-        self.name = name  # Public attribute
-        self.age = age    # Public attribute
-
-    def greet(self):      # Public method
-        return f"Hello, my name is {self.name}. I am {self.age} years old."
-
-# Creating an object
-person = Person("Anna", 25)
-
-# Accessing public attributes and methods
-print(person.name)
-print(person.age)
-print(person.greet())
-
-# Changing public attributes
-person.name = "Maria"
-print(person.greet())
-```
-
-### 2. Protected Attributes and Methods (with a single underscore)
-
-Attributes and methods with a single underscore are considered protected. This convention indicates that they should not be used outside the class or its subclasses:
+Suppose we're writing a bank account class:
 
 ```python
 class BankAccount:
-    def __init__(self, owner, balance):
-        self.owner = owner          # Public attribute
-        self._balance = balance     # Protected attribute
+    def __init__(self, balance):
+        self.balance = balance
 
-    def _calculate_interest(self):  # Protected method
-        return self._balance * 0.05
-
-    def add_interest(self):         # Public method
-        interest = self._calculate_interest()
-        self._balance += interest
-        return f"New balance: {self._balance}"
-
-# Creating an account
-account = BankAccount("Ivan", 1000)
-
-# Proper use through public methods
-print(account.add_interest())
-
-# Technically, we can access protected members, but it's not recommended
-print(account._balance)
+account = BankAccount(1000)
+print(account.balance)        # 1000
+account.balance = -1_000_000  # oops
 ```
 
-### 3. Private Attributes and Methods (with a double underscore)
+The class doesn't object: `balance` is a public attribute, and you can assign anything to it — including things that should never be possible. The class fails to enforce its **invariants** (rules that must always hold, for example "the balance is non-negative").
 
-Attributes and methods with a double underscore undergo "name mangling" and cannot be directly accessed outside the class:
+Encapsulation is the idea that an object has a **public interface** (how the outside world talks to it) and **internal state** (which the outside world shouldn't poke). External code calls methods; the class itself watches over its data and keeps it valid.
 
-```python
-class SecretAgent:
-    def __init__(self, name, code_name):
-        self.name = name                  # Public attribute
-        self.__code_name = code_name      # Private attribute
+## The single-underscore convention
 
-    def __secret_mission(self):           # Private method
-        return f"Agent {self.__code_name} on a secret mission"
+Python has no `private` keyword. Instead there's a convention: an attribute or method whose name starts with an underscore is considered "internal", meaning don't touch from outside:
 
-    def report(self):                     # Public method
-        return f"Agent {self.name}'s report: {self.__secret_mission()}"
+```python-executable
+class BankAccount:
+    def __init__(self, balance):
+        self._balance = balance   # underscore = "internal"
 
-# Creating an agent
-agent = SecretAgent("James Bond", "007")
+    def get_balance(self):
+        return self._balance
 
-# Access through a public method
-print(agent.report())
+    def deposit(self, amount):
+        if amount > 0:
+            self._balance += amount
 
-# Attempt to directly access private members
-try:
-    print(agent.__code_name)
-except AttributeError as e:
-    print(f"Error: {e}")
+    def withdraw(self, amount):
+        if 0 < amount <= self._balance:
+            self._balance -= amount
 
-# Python doesn't completely prohibit access, but makes it more complex
-print(agent._SecretAgent__code_name)
+account = BankAccount(1000)
+account.deposit(500)
+account.withdraw(2000)        # more than the balance, ignored
+print(account.get_balance())
+# Output: 1500
 ```
 
-## Getters and Setters
+From the outside only `deposit`, `withdraw`, and `get_balance` are available: everything you need to work with the account. You **technically can** still poke `_balance` from outside (Python doesn't forbid it), but the convention says: don't, otherwise you're bypassing the class's checks.
 
-To provide controlled access to attributes, getter and setter methods are used:
+The Python community states this philosophy as **"we're all consenting adults here"**. The language doesn't forbid — it signals that you shouldn't touch this. Responsibility is on the programmer.
 
-```python
-class Person:
-    def __init__(self, name, age):
-        self.__name = name    # Private attribute
-        self.__age = age      # Private attribute
+## Properties: an attribute on the outside, a method on the inside
 
-    # Getter for name
-    def get_name(self):
-        return self.__name
+Often you want `account.balance` to **look** like a regular attribute from the outside, while underneath there's actually a method (for example, with validation). In Java you'd write `getBalance()` and `setBalance()`. In Python there's `@property`:
 
-    # Setter for name with validation
-    def set_name(self, name):
-        if isinstance(name, str) and len(name) > 0:
-            self.__name = name
-        else:
-            raise ValueError("Name must be a non-empty string")
+```python-executable
+class Account:
+    def __init__(self, balance):
+        self._balance = balance
 
-    # Getter for age
-    def get_age(self):
-        return self.__age
+    @property
+    def balance(self):
+        return self._balance
 
-    # Setter for age with validation
-    def set_age(self, age):
-        if isinstance(age, int) and 0 <= age <= 120:
-            self.__age = age
-        else:
-            raise ValueError("Age must be an integer between 0 and 120")
+    @balance.setter
+    def balance(self, value):
+        if value < 0:
+            raise ValueError("Balance cannot be negative")
+        self._balance = value
 
-# Creating an object
-person = Person("Alex", 30)
+account = Account(1000)
 
-# Using getters and setters
-print(f"Name: {person.get_name()}, Age: {person.get_age()}")
+# Used like a regular attribute:
+print(account.balance)
+# Output: 1000
 
-# Changing values through setters
-person.set_name("Michael")
-person.set_age(35)
-print(f"Name: {person.get_name()}, Age: {person.get_age()}")
+account.balance = 500   # triggers the setter with validation
+print(account.balance)
+# Output: 500
 
-# Validation check
+# Trying to set a negative value:
 try:
-    person.set_age(150)
+    account.balance = -100
 except ValueError as e:
     print(f"Error: {e}")
+# Output: Error: Balance cannot be negative
 ```
 
-## Properties
+The `@property` decorator turns a method into a "computed attribute". `@balance.setter` defines what happens on assignment. From the outside it all looks like `account.balance = 500`, but inside the class the validation kicks in.
 
-Python provides an elegant way to implement getters and setters through the `@property` decorator:
+> In Java and C++ people often write `get_x()` and `set_x()` methods. In Python that's not idiomatic: use `@property`.
 
-```python
-class Temperature:
-    def __init__(self, celsius=0):
-        self.__celsius = celsius
+## Read-only properties
 
-    # Getter
-    @property
-    def celsius(self):
-        return self.__celsius
+If a `@property` has no setter, the attribute becomes read-only. This is handy for **computed** values that don't make sense to "set" from outside:
 
-    # Setter
-    @celsius.setter
-    def celsius(self, value):
-        if value < -273.15:
-            raise ValueError("Temperature cannot be below absolute zero")
-        self.__celsius = value
-
-    # Computed property
-    @property
-    def fahrenheit(self):
-        return self.__celsius * 9/5 + 32
-
-    @fahrenheit.setter
-    def fahrenheit(self, value):
-        self.__celsius = (value - 32) * 5/9
-
-# Creating an object
-temp = Temperature(25)
-
-# Using properties as regular attributes
-print(f"Temperature: {temp.celsius}°C = {temp.fahrenheit}°F")
-
-# Changing temperature in Celsius
-temp.celsius = 30
-print(f"Temperature: {temp.celsius}°C = {temp.fahrenheit}°F")
-
-# Changing temperature in Fahrenheit
-temp.fahrenheit = 68
-print(f"Temperature: {temp.celsius}°C = {temp.fahrenheit}°F")
-
-# Properties with validation protect against errors
-try:
-    temp.celsius = -300
-except ValueError as e:
-    print(f"Error: {e}")
-```
-
-### Read-Only Properties
-
-Properties can be used to create read-only attributes:
-
-```python
+```python-executable
 import math
 
 class Circle:
     def __init__(self, radius):
-        self.__radius = radius
+        self._radius = radius
 
     @property
     def radius(self):
-        return self.__radius
+        return self._radius
 
     @radius.setter
     def radius(self, value):
-        if value > 0:
-            self.__radius = value
-        else:
+        if value <= 0:
             raise ValueError("Radius must be positive")
+        self._radius = value
 
-    # Read-only properties (no setters)
     @property
     def area(self):
-        return math.pi * self.__radius ** 2
+        return math.pi * self._radius ** 2
 
-    @property
-    def circumference(self):
-        return 2 * math.pi * self.__radius
-
-# Creating a circle and using properties
 circle = Circle(5)
-print(f"Radius: {circle.radius}, Area: {circle.area:.2f}")
+print(f"Radius: {circle.radius}, area: {circle.area:.2f}")
+# Output: Radius: 5, area: 78.54
 
-# Changing the radius, area recalculates automatically
+# Change the radius, the area is recomputed automatically
 circle.radius = 7
-print(f"Radius: {circle.radius}, Area: {circle.area:.2f}")
+print(f"Radius: {circle.radius}, area: {circle.area:.2f}")
+# Output: Radius: 7, area: 153.94
 
-# Cannot change a read-only property
+# You can't assign to area (there's no setter)
 try:
     circle.area = 100
 except AttributeError as e:
     print(f"Error: {e}")
+# Output: Error: property 'area' of 'Circle' object has no setter
 ```
 
-## Advantages of Encapsulation
+`area` always returns the current value, and you can't assign to it: there shouldn't be a "set the area" operation, since it follows from the radius.
 
-Applying encapsulation provides the following advantages:
+## What about double underscores?
 
-1. **Control of data access** — checking values before setting
-2. **Implementation flexibility** — ability to change internal implementation without changing the interface
-3. **Data security** — protection against accidental changes
-4. **Interface simplification** — hiding complex logic behind a simple API
+You may sometimes see attributes with two leading underscores: `self.__balance`. That triggers Python's **name mangling**: the attribute is renamed inside the object to `_ClassName__balance`. It's useful in rare cases (for example, to make sure an attribute doesn't collide with a same-named attribute in a subclass) and is almost never seen in regular code. By default, use a single underscore.
 
-## Understanding Check
+## What encapsulation gives you
 
-**Which access level is most appropriate for an attribute that should be accessible for reading but should not be changed outside the class?**
+The main point: the class becomes **responsible for its own data**. From outside, there's no (by convention) way to bypass its checks and leave the object in an invalid state. If later you need to change how the data is stored (say, `_balance` becomes a dict with a transaction history), the outside code doesn't break, because it still talks to the class through the same interface — `deposit`, `withdraw`, `balance`.
 
+## What's next?
 
-## Conclusion
+In the next lesson we'll take on the third principle of OOP — polymorphism: how a single interface can work with objects of different classes, and why that makes code simpler.
 
-Encapsulation in Python acts as a smart security system — it doesn't build impenetrable walls, but creates clear boundaries and indicates the right ways to interact with objects. Next time, we'll learn about polymorphism — a principle that allows objects to change form, like chameleons, while maintaining a unified interface. 🦎
+---
+
+**Which access level is most appropriate for an attribute that should be readable but should not be changed outside the class?**
+

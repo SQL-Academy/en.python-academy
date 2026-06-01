@@ -1,178 +1,130 @@
-# Asynchronous Programming in Python: asyncio Basics
+# asyncio basics in Python
 
-In previous articles, we looked at multithreading (`threading`) and multiprocessing (`multiprocessing`) as ways to achieve concurrency in Python. Now, we will explore a completely different approach — **asynchronous programming** using the `asyncio` module.
+The previous article covered threads and processes. Both share the same model: the OS switches between "workers". **asyncio** takes a different path: a single thread with cooperative multitasking. The program itself marks the places where a task can be "deferred"; those places are `await`.
 
-`asyncio` allows writing single-threaded concurrent code using the concept of coroutines. This is particularly effective for I/O-bound tasks, where performance can be significantly higher than multithreaded solutions due to lower overhead.
+For I/O-bound workloads, asyncio gives the best ratio of throughput to resources: thousands of concurrent connections on a single thread with no OS-thread overhead.
 
-## What is Asynchronous Programming?
+## The event loop and the cooperative model
 
-Imagine your program is performing a task that requires accessing an external resource, like downloading a file from the internet. In a traditional (synchronous) approach, the program would simply wait until the file is fully downloaded before moving to the next line of code. If there are many such operations, the total execution time can become very long, as the processor spends most of its time idle, waiting.
+The heart of asyncio is the **event loop**. It keeps a list of tasks, runs one of them, and when a task hits `await something_slow()`, the task "yields control" and the loop switches to the next ready task. When `something_slow()` finishes, the original task becomes ready again.
 
-**Asynchronous programming** offers a different approach. It allows the program to start an operation that requires waiting (an I/O operation) and, without waiting for it to complete, switch to executing other tasks. When the awaited operation finishes, the program can return to process its result.
+Important: switching happens **only at `await`**. There are no interruptions in the middle of a computation. It's "cooperative" multitasking: tasks agree on when to yield. Consequence: if a task doesn't hit `await` (for example, it does heavy CPU work), the entire event loop is stuck.
 
-In `asyncio`, this is achieved through **cooperative multitasking**:
+## async and await
 
--   Tasks (coroutines) explicitly signal when they are ready to yield control (usually when waiting for an I/O operation to complete).
--   The **Event Loop** is the "brain" of `asyncio`. It keeps track of all active tasks and waiting operations. When one task yields control, the event loop finds another task ready to run and transfers control to it.
+Python 3.5 introduced two keywords:
 
-**How does this increase performance for I/O-bound tasks?**
+-   `async def` defines a **coroutine** (an asynchronous function)
+-   `await` inside a coroutine: "wait for this operation, and let the event loop run other things while you wait"
 
-Performance gains in `asyncio` come not from parallel execution of computations on multiple CPU cores (as in `multiprocessing`), but from the **most efficient use of processor time**.
-Instead of the processor idling while the program waits for a network response or file read, `asyncio` allows it to handle other tasks during that time. This means the program can juggle many I/O operations simultaneously, quickly switching between them as they become ready.
-
-**Advantages:**
-
--   **High Responsiveness:** The application doesn't "freeze" during long I/O operations.
--   **Efficient Resource Usage:** Lower overhead compared to creating and managing many operating system threads for each I/O operation.
--   **Scalability:** Allows handling thousands of simultaneous connections (e.g., in web servers) with relatively few system resources.
-
-**Important:** Asynchronous programming with `asyncio` on a single thread **will not speed up CPU-bound tasks** (tasks that heavily use the processor). If you have complex mathematical calculations, their parallel execution on multiple cores will require `multiprocessing`. `asyncio` shines specifically in tasks involving a lot of waiting.
-
-**Key Concepts of `asyncio`:**
-
--   **Event Loop**: Manages the execution of asynchronous tasks.
--   **Coroutines**: Functions defined with `async def`, whose execution can be paused and resumed.
-
-## Keywords: async and await
-
-Starting with Python 3.5, special keywords were introduced for asynchronous programming:
-
--   `async def`: Used to define a coroutine (an asynchronous function).
-    ```python-executable
-    async def my_coroutine():
-        # ... asynchronous code ...
-        pass
-    ```
--   `await`: Used inside a coroutine to wait for the result of another coroutine or an awaitable object (e.g., a `Future` or another coroutine). While `await` is waiting, the event loop can execute other tasks.
-    ```python-executable
-    async def main():
-        result = await another_coroutine() # Pauses main until another_coroutine completes
-        print(result)
-    ```
-    `await` can only be used inside a function defined with `async def`.
-
-## Coroutines
-
-A coroutine is the fundamental building block of `asyncio`. When you call a function defined with `async def`, it immediately returns a coroutine object, rather than executing the function body.
-
-```python-executable
+```python
 import asyncio
 
-async def greet(name):
-    print(f"Hello, {name}!")
-    await asyncio.sleep(1) # Simulate I/O operation (non-blocking sleep)
-    print(f"Bye, {name}!")
-
-# Calling greet() returns a coroutine object but does not execute its code
-coro_obj = greet("Alice")
-print(type(coro_obj)) # <class 'coroutine'>
-
-# To run the coroutine, an event loop is needed
-# See example below using asyncio.run()
+async def say_hello():
+    print("Hello...")
+    await asyncio.sleep(1)        # non-blocking, hands control back
+    print("...world")
 ```
 
-## Event Loop
+**Important detail**: calling `say_hello()` **doesn't run** the coroutine. It creates a coroutine object:
 
-The event loop is the dispatcher that manages all asynchronous tasks. It decides which coroutine should run next, and when to pause and resume them.
+```python
+coro = say_hello()
+print(type(coro))     # <class 'coroutine'>
+# the code inside hasn't run yet!
+```
 
-You rarely need to interact with the event loop directly if you use modern `asyncio` constructs.
+To run a coroutine, you need an event loop.
 
-## The asyncio.run() Function
+## asyncio.run: the entry point
 
-`asyncio.run(coroutine)` is a high-level function (added in Python 3.7+) that simplifies running asynchronous code. It handles creating the event loop, running the passed coroutine in it, and managing its lifecycle.
+`asyncio.run()` starts an event loop, runs the given coroutine, and closes the loop:
 
-```python-executable
+```python
+import asyncio
+
+async def main():
+    print("Start")
+    await asyncio.sleep(1)
+    print("Done after 1 second")
+
+asyncio.run(main())
+```
+
+`asyncio.run()` is the standard way to launch an async program from synchronous code. It's called **once** at the top level of your application.
+
+## Sequential vs concurrent
+
+Stacking `await` one after another runs coroutines **sequentially**, one at a time:
+
+```python
 import asyncio
 import time
 
-async def say_after(delay, what):
-    await asyncio.sleep(delay) # Non-blocking sleep
-    print(what)
-
-async def main_program():
-    start_time = time.time()
-    print(f"Started execution at {time.strftime('%X')}")
-
-    await say_after(1, "Hello")
-    await say_after(2, "World")
-
-    print(f"Finished in {time.time() - start_time:.2f} sec.")
-
-if __name__ == "__main__":
-    asyncio.run(main_program())
-```
-
-Note that `asyncio.sleep()` does not block the entire thread but allows the event loop to run other tasks if available. In this example, because `await` precedes each `say_after` call, they execute sequentially, but the `sleep` operation itself is asynchronous.
-
-## Tasks (asyncio.Task)
-
-For coroutines to run concurrently (i.e., be able to switch while one is waiting), they need to be wrapped in **Tasks** using `asyncio.create_task()` (Python 3.7+) or `asyncio.ensure_future()` (older way).
-
-A Task is an object that manages the independent execution of a coroutine within the event loop.
-
-```python-executable
-import asyncio
-import time
-
-async def worker_task(name, delay):
-    print(f"Task {name}: starting, will wait {delay} sec.")
+async def slow_task(name, delay):
     await asyncio.sleep(delay)
-    print(f"Task {name}: finished.")
-    return f"Result from {name}"
+    print(f"{name} done in {delay}s")
 
-async def main_concurrent():
-    start_time = time.time()
-    print(f"Starting concurrent tasks at {time.strftime('%X')}")
+async def main():
+    start = time.time()
+    await slow_task("A", 2)
+    await slow_task("B", 1)
+    await slow_task("C", 3)
+    print(f"Total: {time.time() - start:.1f}s")    # ~6s
 
-    # Create tasks for concurrent execution
-    task1 = asyncio.create_task(worker_task("A", 2))
-    task2 = asyncio.create_task(worker_task("B", 1))
-    task3 = asyncio.create_task(worker_task("C", 3))
-
-    # Wait for all tasks to complete concurrently
-    # (A more convenient way to wait for multiple tasks is asyncio.gather())
-    results = await asyncio.gather(task1, task2, task3)
-
-    print(f"\nAll tasks finished in {time.time() - start_time:.2f} sec.")
-    print(f"Results: {results}")
-
-if __name__ == "__main__":
-    asyncio.run(main_concurrent())
+asyncio.run(main())
 ```
 
-In this example, `worker_task("A", 2)`, `worker_task("B", 1)`, and `worker_task("C", 3)` will start running concurrently. The total execution time will be close to the maximum delay (3 seconds), not the sum of all delays.
+The three tasks could run in parallel (they only wait), but we forced them to take turns: `await` waits for the current one to finish. To run them **concurrently**, use `asyncio.gather()`:
 
-`asyncio.gather(*tasks)` allows running multiple tasks concurrently and waiting for all of them, returning a list of their results.
+```python
+async def main():
+    start = time.time()
+    await asyncio.gather(
+        slow_task("A", 2),
+        slow_task("B", 1),
+        slow_task("C", 3),
+    )
+    print(f"Total: {time.time() - start:.1f}s")    # ~3s
 
-## Future Objects
+asyncio.run(main())
+```
 
-A `Future` is a special low-level object that represents the eventual result of an asynchronous operation. Coroutines usually don't interact with `Future` objects directly, but `Task` is a subclass of `Future`.
+`gather()` runs the coroutines concurrently and returns a list of results. The total time equals the **longest** task, not the sum. That's the point of asyncio for I/O.
 
--   A `Future` can be awaited (`await future_obj`).
--   A `Future` can have its result set (`future_obj.set_result()`) or an exception set (`future_obj.set_exception()`).
+## Tasks: running coroutines in the background
 
-In most application-level asynchronous programming, you will work with coroutines and tasks, while `Future` objects are used by libraries under the hood.
+Sometimes you want to start a coroutine "right now" without awaiting it, so it runs alongside the main logic. Use `asyncio.create_task()`:
 
-## Simple Asynchronous Example: "Hello, World"
-
-```python-executable
+```python
 import asyncio
 
-async def hello_world_async():
-    print("Async Hello...")
-    await asyncio.sleep(0.1) # Simulate a small async operation
-    print("...World!")
+async def background_log():
+    while True:
+        print("heartbeat")
+        await asyncio.sleep(1)
 
-if __name__ == "__main__":
-    asyncio.run(hello_world_async())
+async def main():
+    task = asyncio.create_task(background_log())
+    await asyncio.sleep(3)      # do something else
+    task.cancel()               # stop the background coroutine
+
+asyncio.run(main())
 ```
 
-## What's Next?
+`create_task()` schedules the coroutine for execution immediately. It returns a **Task** object with `cancel()`, `done()`, `result()`. A Task is essentially a coroutine the event loop has already started and is tracking: you can check its status, grab the result, or cancel it.
 
-We have covered the very basics of `asyncio`: the `async`/`await` keywords, coroutines, the event loop, tasks, and the `asyncio.run()` function. This forms the foundation for writing efficient I/O-bound code.
+## Key rules
 
-In the next article, we will delve into more advanced `asyncio` features, such as asynchronous generators, context managers, working with streams, and synchronization primitives for asynchronous code.
+1. **Inside `async def`, every long wait goes through `await`**. A plain `time.sleep(1)` blocks the entire event loop. Use `await asyncio.sleep(1)`.
+2. **Want them to run concurrently? `asyncio.gather()` or `asyncio.create_task()`**. Plain stacked `await` = sequential.
+3. **CPU-bound in asyncio stalls everything**. Long computation? Move it to `run_in_executor` (next article) or `multiprocessing`.
+
+## What's next?
+
+The next article covers asyncio's advanced techniques: queues, coordination between coroutines, and (the most important one) how to run blocking code without killing the event loop.
 
 ---
 
-**What is the core feature of asynchronous programming with `asyncio`?**
+**What is the core idea of asyncio's concurrency model?**
+

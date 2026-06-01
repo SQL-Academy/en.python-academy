@@ -1,273 +1,141 @@
-# pytest: Fixtures, Parametrization, and Advanced Tests
+# pytest: fixtures and parametrization
 
-In the previous article, we got acquainted with the basics of `pytest`: we learned how to write and run simple tests. Now it's time to delve into two of the most powerful and frequently used concepts in `pytest` that make it so flexible and convenient: **fixtures** and **parametrization**.
+In the previous article we wrote simple test functions. Now we'll cover two things that keep tests from turning into copy-paste: **fixtures** (shared setup for many tests) and **parametrization** (one test, many inputs).
 
-## Fixtures: Preparing and Managing the Test Environment ⚙️
+## Fixtures: shared setup
 
-Often, to run a test, you need to perform some preliminary actions: prepare data, set up a test object, establish a database connection, etc. After the test, you might need to perform cleanup: delete temporary files, close connections.
-
-> **Fixtures** in `pytest` are functions that serve to set up and provide data or objects needed for your tests. They help make tests cleaner, more structured, and avoid code duplication.
-
-### Creating a Simple Fixture
-
-A fixture is defined using the `@pytest.fixture` decorator.
+Tests often need the same prepared state: a user with filled-in fields, an open object, a test database. A fixture is a helper function that returns that state and gets passed into tests by name. The `@pytest.fixture` decorator tells pytest "this function is a fixture, call it for tests that request it":
 
 ```python
-# test_fixtures_example.py
 import pytest
 
 @pytest.fixture
-def sample_list():
-    print("\n(Fixture sample_list: creating list)")
-    return [1, 2, 3, 4, 5]
+def alice():
+    return {"id": 1, "name": "Alice", "email": "alice@example.com"}
 
-@pytest.fixture
-def sample_dict():
-    print("\n(Fixture sample_dict: creating dictionary)")
-    return {"name": "Alice", "age": 30}
+def test_user_has_email(alice):         # fixture name in argument
+    assert "@" in alice["email"]
 
-def test_list_length(sample_list): # Fixture name is passed as an argument
-    print("(Test test_list_length)")
-    assert len(sample_list) == 5
-
-def test_dict_name(sample_dict): # Another fixture
-    print("(Test test_dict_name)")
-    assert sample_dict["name"] == "Alice"
-
-def test_list_and_dict_usage(sample_list, sample_dict):
-    print("(Test test_list_and_dict_usage)")
-    assert len(sample_list) > 0
-    assert "age" in sample_dict
+def test_user_id_is_int(alice):
+    assert isinstance(alice["id"], int)
 ```
 
-If you run `pytest -v -s` (the `-s` flag is needed to see the `print` outputs from fixtures and tests):
+pytest sees that `test_user_has_email` requests the `alice` fixture, calls it, and passes the result into the test. If a test doesn't need the fixture, just don't include it in the arguments. The main convenience: you describe the setup once and reuse it in dozens of tests via one argument.
 
--   `pytest` will execute each fixture before the test that requests it.
--   The result of the fixture execution (what it returns) is passed into the test as an argument.
+## yield: setup and teardown
 
-### Fixture Teardown: yield for Setup and Teardown
-
-If you need to perform actions _after_ the test has finished (e.g., close a database connection or delete a temporary file), use `yield` in the fixture.
+When you need not only to prepare something but also to **clean up after the test** (close a connection, delete a temp file), use `yield` instead of `return`:
 
 ```python
-# test_fixture_yield.py
-import pytest
 import os
+import pytest
 
 @pytest.fixture
-def temp_file_fixture():
-    file_path = "temp_test_file.txt"
-    print(f"\n(Fixture: creating file {file_path})")
-    with open(file_path, "w") as f:
-        f.write("Hello, pytest!")
+def temp_file():
+    path = "temp_test_file.txt"
+    with open(path, "w") as f:
+        f.write("hello")
 
-    yield file_path # The test receives this value
+    yield path           # test gets path
 
-    print(f"\n(Fixture: deleting file {file_path})")
-    os.remove(file_path)
+    os.remove(path)       # runs after the test
 
-def test_read_temp_file(temp_file_fixture):
-    file_path = temp_file_fixture # Get the file path from the fixture
-    print(f"(Test: reading file {file_path})")
-    with open(file_path, "r") as f:
-        content = f.read()
-    assert content == "Hello, pytest!"
+def test_read(temp_file):
+    with open(temp_file) as f:
+        assert f.read() == "hello"
 ```
 
-The code before `yield` runs before the test (setup), and the code after `yield` runs after the test (teardown).
+Code **before** `yield` runs before the test (setup); code **after** runs after the test (teardown). Works even if the test fails.
 
-### Fixture Scopes (scope)
+## Scope: how often to recreate
 
-By default, a fixture runs for every test function that requests it. This behavior can be changed using the `scope` parameter in the `@pytest.fixture` decorator.
-
-Available scopes:
-
--   `function` (default): Fixture runs once per test function.
--   `class`: Fixture runs once per test class.
--   `module`: Fixture runs once per module.
--   `package`: Fixture runs once per package (Python 3).
--   `session`: Fixture runs once for the entire test session.
+By default, a fixture runs **per test**. If setup is expensive (open a DB, load a big file), tell pytest to do it "once per session" with `scope="session"`:
 
 ```python
-# test_scopes.py
-import pytest
+@pytest.fixture(scope="session")
+def db_connection():
+    print("\nconnecting to DB (one time)")
+    conn = {"status": "connected"}
+    yield conn
+    print("\nclosing connection")
+```
+
+In practice, 95% of the time you'll use `function` (default, one instance per test) and `session` (one per run). There are also `class` and `module` for special cases, not needed to get started.
+
+## conftest.py: sharing fixtures
+
+If a fixture is needed in multiple files, put it in `conftest.py` next to your tests. No import needed, pytest finds it automatically:
+
+<CodeProject
+    defaultFile="test_api.py"
+    files={[
+        {
+            path: 'conftest.py',
+            content: `import pytest
 
 @pytest.fixture(scope="session")
-def session_db_connection():
-    print("\n(Fixture session_db_connection: establishing DB connection - ONCE PER SESSION)")
-    connection = {"status": "connected"} # Simulate connection
-    yield connection
-    print("\n(Fixture session_db_connection: closing DB connection - ONCE PER SESSION)")
+def app_config():
+    return {"api_url": "https://test.example.com", "timeout": 5}
+`,
+        },
+        {
+            path: 'test_api.py',
+            content: `def test_api_url(app_config):     # fixture from conftest.py
+    assert "example.com" in app_config["api_url"]
+`,
+        },
+    ]}
+/>
 
-@pytest.fixture(scope="module")
-def module_data_setup(session_db_connection):
-    # This fixture depends on session_db_connection
-    assert session_db_connection["status"] == "connected"
-    print("\n(Fixture module_data_setup: setting up module data - ONCE PER MODULE)")
-    data = {"module_id": 123}
-    yield data
-    print("\n(Fixture module_data_setup: cleaning up module data)")
+That's the standard way to share fixtures across the tests of a project.
 
-class TestUserOperations:
-    def test_user_create(self, module_data_setup, session_db_connection):
-        print("(Test test_user_create)")
-        assert session_db_connection["status"] == "connected"
-        assert module_data_setup["module_id"] == 123
+## Parametrization: one test, many inputs
 
-    def test_user_view(self, module_data_setup, session_db_connection):
-        print("(Test test_user_view)")
-        assert session_db_connection["status"] == "connected"
-        assert module_data_setup["module_id"] == 123
-
-def test_another_operation(module_data_setup, session_db_connection):
-    print("(Test test_another_operation in the same module)")
-    assert session_db_connection["status"] == "connected"
-    assert module_data_setup["module_id"] == 123
-```
-
-Choosing the correct scope helps optimize test execution by avoiding unnecessary setup repetitions.
-
-### Shared Fixtures: conftest.py
-
-If you have fixtures that you want to use across multiple test files, you can define them in a special file named `conftest.py`. `pytest` automatically discovers this file.
-
--   The `conftest.py` file should be located in the test directory or a parent directory.
--   Fixtures defined in `conftest.py` become available to all tests in that directory and its subdirectories without needing to be imported.
-
-**Example:**
-
-Contents of `conftest.py` (in the root test folder or a subfolder):
+When you need to check a function against 5–10 input sets, don't write 10 near-identical tests. Use `@pytest.mark.parametrize`:
 
 ```python
-# conftest.py
-import pytest
-
-@pytest.fixture(scope="session")
-def global_app_config():
-    print("\n(conftest.py: Loading global application config - ONCE PER SESSION)")
-    return {"api_url": "https://test.api.example.com", "timeout": 5}
-```
-
-Contents of `test_module_one.py`:
-
-```python
-# test_module_one.py
-def test_api_url(global_app_config): # Fixture from conftest.py is available here
-    print(f"(Test test_api_url: using {global_app_config['api_url']})")
-    assert "example.com" in global_app_config["api_url"]
-```
-
-### Automatic Fixture Usage (autouse)
-
-Sometimes, a fixture needs to run for all tests within a specific scope, even if the tests don't explicitly request it. The `autouse=True` parameter is used for this.
-
-```python
-# conftest.py
-import pytest
-
-@pytest.fixture(autouse=True, scope="session")
-def print_start_end_session():
-    print("\n--- STARTING TEST SESSION ---")
-    yield
-    print("\n--- ENDING TEST SESSION ---")
-
-@pytest.fixture(autouse=True, scope="function")
-def track_test_duration():
-    import time
-    start_time = time.time()
-    yield
-    duration = time.time() - start_time
-    print(f"(Test duration: {duration:.4f} sec.)")
-```
-
-Use `autouse` with caution, as it can make test dependencies less explicit.
-
-## Parametrization: One Test, Many Runs 🔄
-
-Often, you need to test the same logic with different sets of input data and expected results. Instead of writing multiple nearly identical tests, `pytest` offers **parametrization** using the `@pytest.mark.parametrize` marker.
-
-```python
-# test_parametrize_example.py
 import pytest
 
 def get_discount(age, is_member):
     if age >= 65:
-        return 0.15 # 15% discount for seniors
+        return 0.15
     if is_member:
-        return 0.10 # 10% discount for members
+        return 0.10
     if age < 18:
-        return 0.05 # 5% discount for juniors
+        return 0.05
     return 0.0
 
 @pytest.mark.parametrize(
-    "age, is_member, expected_discount", # Argument names in the test function
+    "age, is_member, expected",
     [
-        (70, False, 0.15),      # Test case 1
-        (30, True, 0.10),       # Test case 2
-        (16, False, 0.05),      # Test case 3
-        (25, False, 0.0),       # Test case 4
-        (65, True, 0.15),       # Senior member still gets senior discount
-        pytest.param(10, True, 0.05, id="JuniorMember"), # Example with a test ID
-    ]
+        (70, False, 0.15),
+        (30, True,  0.10),
+        (16, False, 0.05),
+        (25, False, 0.0),
+        (65, True,  0.15),
+    ],
 )
-def test_get_discount_parametrized(age, is_member, expected_discount):
-    assert get_discount(age, is_member) == expected_discount
+def test_get_discount(age, is_member, expected):
+    assert get_discount(age, is_member) == expected
 ```
 
-In this example:
+Note the first argument of `parametrize`: it's a single **string** with parameter names separated by commas (`"age, is_member, expected"`), not a tuple. That's a pytest-specific convention. After it comes the list of tuples, one tuple per test run.
 
--   The `test_get_discount_parametrized` test will run multiple times, once for each tuple of values in the list.
--   `pytest.param(...)` can be used to assign a custom ID to a test case, improving output readability with many parameters.
+pytest runs this test 5 times, once per row. In the output they appear as separate tests:
 
-### Combining Fixtures and Parametrization
-
-Fixtures and parametrization can be used together to create very flexible test scenarios.
-
-```python
-# test_fixtures_and_parametrize.py
-import pytest
-
-@pytest.fixture
-def user_profile_factory():
-    def _create_profile(name, role="viewer"):
-        return {"username": name, "role": role, "permissions": []}
-    return _create_profile
-
-@pytest.mark.parametrize(
-    "role_to_assign, expected_permission_count",
-    [
-        ("admin", 5),
-        ("editor", 3),
-        ("viewer", 1)
-    ]
-)
-def test_user_permissions_after_role_assignment(
-    user_profile_factory,
-    role_to_assign,
-    expected_permission_count
-):
-    profile = user_profile_factory(name="testuser")
-
-    # Simulate permission assignment logic based on role
-    if role_to_assign == "admin":
-        profile["permissions"] = ["read", "write", "delete", "manage_users", "publish"]
-    elif role_to_assign == "editor":
-        profile["permissions"] = ["read", "write", "publish"]
-    elif role_to_assign == "viewer":
-        profile["permissions"] = ["read"]
-
-    profile["role"] = role_to_assign
-
-    assert profile["role"] == role_to_assign
-    assert len(profile["permissions"]) == expected_permission_count
+```text
+test_discount.py::test_get_discount[70-False-0.15] PASSED
+test_discount.py::test_get_discount[30-True-0.1]   PASSED
+...
 ```
 
-## What's Next?
+If one case fails, the test name shows its parameters, so it's immediately clear which combination broke.
 
-Fixtures and parametrization are the bread and butter of effective testing with `pytest`. By mastering them, you can write clean, maintainable, and comprehensive tests.
+## What's next?
 
-In the next article, we will look at how to isolate our tests from external dependencies using mocks and stubs.
+Next up: **mocks and stubs**, how to isolate tests from external dependencies (DB, API, time) so they stay fast and predictable.
 
 ---
 
-**Which statement about fixtures and parametrization in `pytest` is correct?**
+**What is true about fixtures and parametrization in pytest?**
+
