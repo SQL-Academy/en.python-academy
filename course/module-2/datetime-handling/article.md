@@ -98,10 +98,10 @@ The format is described by a string with directives like `%Y`, `%m`, `%d`:
 | `%Y`      | Year, 4 digits           | 2026    |
 | `%y`      | Year, 2 digits           | 26      |
 | `%m`      | Month (01-12)            | 05      |
-| `%B`      | Full month name          | May     |
-| `%b`      | Abbreviated month name   | May     |
+| `%B`      | Full month name          | January |
+| `%b`      | Abbreviated month name   | Jan     |
 | `%d`      | Day of month (01-31)     | 20      |
-| `%A`      | Full weekday name        | Wed     |
+| `%A`      | Full weekday name        | Wednesday |
 | `%a`      | Abbreviated weekday name | Wed     |
 | `%H`      | Hour (00-23)             | 14      |
 | `%I`      | Hour (01-12)             | 02      |
