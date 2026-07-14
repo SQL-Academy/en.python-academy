@@ -5,11 +5,11 @@ you can get help and support from other students or suggest yourself in case of 
 
 Communication is organized through:
 
--   **[community on Telegram](https://t.me/pythonacademyofficial)**
+-   **[community on Telegram](https://telegram.me/pythonacademyofficial)**
 
 On the community page, we post information on the latest and most important updates.
 
-There are **[Telegram](https://t.me/pythonacademychat)** chat for communication between participants.
+There are **[Telegram](https://telegram.me/pythonacademychat)** chat for communication between participants.
 
 ## Problem solving
 
