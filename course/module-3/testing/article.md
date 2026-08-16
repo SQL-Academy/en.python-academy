@@ -1,3 +1,9 @@
+---
+meta:
+    title: "Testing in Python"
+    description: "Introduction to testing in Python: why tests are important, types of tests, and testing frameworks."
+---
+
 # Testing in Python
 
 Imagine building a bridge 🌉 - would you want people to cross it without first checking if it's safe? The same principle applies to your code! Testing helps ensure your programs work as expected, even when you make changes or add new features.
@@ -8,11 +14,11 @@ Imagine building a bridge 🌉 - would you want people to cross it without first
 
 Testing helps:
 
--   Verify your code works correctly
--   Find bugs before your users do
--   Make changes with confidence
--   Document how your code should behave
--   Improve the design of your code
+- Verify your code works correctly
+- Find bugs before your users do
+- Make changes with confidence
+- Document how your code should behave
+- Improve the design of your code
 
 ## Types of tests in Python
 
@@ -20,7 +26,7 @@ In Python, there are several levels of testing, each with its own purpose:
 
 ### Unit tests
 
-```python
+```python-interactive
 # Example of a simple function and its unit test
 def add(a, b):
     return a + b
@@ -30,6 +36,10 @@ result = add(2, 3)
 expected = 5
 print(f"Expected: {expected}, Got: {result}")
 print(f"Test passed: {result == expected}")
+<output>
+Expected: 5, Got: 5
+Test passed: True
+</output>
 ```
 
 Unit tests check individual components (functions, methods, classes) in isolation. They're like testing each brick before building a wall.
@@ -48,7 +58,7 @@ Python has several frameworks to make testing easier:
 
 ### Built-in: unittest
 
-```python
+```python-interactive
 import unittest
 
 class TestAddFunction(unittest.TestCase):
@@ -66,6 +76,9 @@ test = TestAddFunction()
 test.test_add_positive_numbers()
 test.test_add_negative_numbers()
 print("All tests passed!")
+<output>
+All tests passed!
+</output>
 ```
 
 The `unittest` framework is included with Python and provides a rich set of tools for creating and running tests.
@@ -85,7 +98,7 @@ def test_string_operation():
 
 ### doctest
 
-```python
+```python-interactive
 def multiply(a, b):
     """
     Multiply two numbers and return the result.
@@ -100,6 +113,10 @@ def multiply(a, b):
 # In a real project, you'd use doctest.testmod()
 print(multiply(2, 3))
 print(multiply(-1, 4))
+<output>
+6
+-4
+</output>
 ```
 
 `doctest` lets you include tests in your documentation, which helps keep your examples accurate.
@@ -122,5 +139,12 @@ Let's check your understanding of testing basics:
 
 **Which of these is NOT a benefit of testing?**
 
+1. Finding bugs early in development — This is actually one of the main benefits of testing.
+
+2. **Correct answer:** Making your code run faster — Testing verifies code correctness but doesn't inherently make it faster.
+
+3. Giving confidence when refactoring code — Tests help ensure that your changes don't break existing functionality.
+
+4. Documenting expected behavior — Tests serve as executable documentation of how your code should behave.
 
 In the next lessons, we'll explore each testing approach in more detail, starting with why tests are essential for any serious software project.

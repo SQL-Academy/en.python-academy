@@ -1,6 +1,12 @@
+---
+meta:
+    title: "asyncio basics: async/await, coroutines, the event loop"
+    description: "Basic asynchronous programming in Python: async and await keywords, coroutines, the event loop, tasks, and asyncio.gather."
+---
+
 # asyncio basics in Python
 
-The previous article covered threads and processes. Both share the same model: the OS switches between "workers". **asyncio** takes a different path: a single thread with cooperative multitasking. The program itself marks the places where a task can be "deferred"; those places are `await`.
+Three downloads from the intro article took a second and a half — and for almost all of it the CPU just waited for the server to answer. Threads and processes solved that by handing the switching to the operating system. **asyncio** takes a different route: a single thread with cooperative multitasking. While one request waits on the server, that same thread picks up the next, and the program itself marks the points where a task can be "parked" with the keyword `await`.
 
 For I/O-bound workloads, asyncio gives the best ratio of throughput to resources: thousands of concurrent connections on a single thread with no OS-thread overhead.
 
@@ -8,14 +14,16 @@ For I/O-bound workloads, asyncio gives the best ratio of throughput to resources
 
 The heart of asyncio is the **event loop**. It keeps a list of tasks, runs one of them, and when a task hits `await something_slow()`, the task "yields control" and the loop switches to the next ready task. When `something_slow()` finishes, the original task becomes ready again.
 
+![Illustration: in the centre an Event Loop, around it three tasks (Task 1 — running, Task 2 — awaiting I/O, Task 3 — ready); arrows between the tasks and event loop show how control is handed back and forth](https://python-academy.org/static/guidePage/asyncio-basics/event-loop-en.webp "The event loop hands control between tasks on every await")
+
 Important: switching happens **only at `await`**. There are no interruptions in the middle of a computation. It's "cooperative" multitasking: tasks agree on when to yield. Consequence: if a task doesn't hit `await` (for example, it does heavy CPU work), the entire event loop is stuck.
 
 ## async and await
 
 Python 3.5 introduced two keywords:
 
--   `async def` defines a **coroutine** (an asynchronous function)
--   `await` inside a coroutine: "wait for this operation, and let the event loop run other things while you wait"
+- `async def` defines a **coroutine** (an asynchronous function)
+- `await` inside a coroutine: "wait for this operation, and let the event loop run other things while you wait"
 
 ```python
 import asyncio
@@ -120,11 +128,16 @@ asyncio.run(main())
 2. **Want them to run concurrently? `asyncio.gather()` or `asyncio.create_task()`**. Plain stacked `await` = sequential.
 3. **CPU-bound in asyncio stalls everything**. Long computation? Move it to `run_in_executor` (next article) or `multiprocessing`.
 
-## What's next?
-
-The next article covers asyncio's advanced techniques: queues, coordination between coroutines, and (the most important one) how to run blocking code without killing the event loop.
-
----
+## Understanding check
 
 **What is the core idea of asyncio's concurrency model?**
 
+1. True parallelism on multiple CPU cores — That describes multiprocessing. asyncio runs on a single thread and doesn't help CPU-bound work.
+
+2. **Correct answer:** Cooperative multitasking: tasks explicitly hand control back to the event loop at await — Correct. Coroutines yield control at await, letting other tasks run while one waits for I/O. This is the fundamental principle of asyncio.
+
+3. Automatic parallelization of any function without async/await — Not automatic. A function becomes a coroutine only via async def, and switching only happens at await.
+
+4. Creating a system thread per task — The opposite — asyncio runs in a single thread. That's exactly its win for I/O: no thread-creation overhead.
+
+The next article covers asyncio's advanced techniques: queues, coordination between coroutines, and (the most important one) how to run blocking code without killing the event loop.

@@ -1,7 +1,7 @@
 ---
 meta:
-    title: 'What are abstract classes and why are they needed?'
-    description: 'Abstract classes define an interface via @abstractmethod. Learn about the abc module and creating abstract classes in Python.'
+    title: "What are abstract classes and why are they needed?"
+    description: "Abstract classes define an interface via @abstractmethod. Learn about the abc module and creating abstract classes in Python."
 ---
 
 > An **abstract class** is a class that cannot be instantiated directly. It defines an interface (a set of mandatory methods) for its child classes.
@@ -58,6 +58,6 @@ print(rect.perimeter())  # 16
 
 ## Why they are needed:
 
--   **Contract**: they guarantee that any child class implements all the required methods.
--   **Documentation**: they clearly show what methods must be implemented.
--   **Early error detection**: if an abstract method is missing in the child class, Python will raise a `TypeError` at instantiation, rather than failing later when the method is called.
+- **Contract**: they guarantee that any child class implements all the required methods.
+- **Documentation**: they clearly show what methods must be implemented.
+- **Early error detection**: if an abstract method is missing in the child class, Python will raise a `TypeError` at instantiation, rather than failing later when the method is called.

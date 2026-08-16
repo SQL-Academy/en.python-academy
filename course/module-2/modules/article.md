@@ -1,287 +1,224 @@
+---
+meta:
+    title: "Modules in Python"
+    description: "How to create, import, and use your own modules in Python: code organization, namespaces, and best practices."
+---
+
 # Modules in Python
 
-Imagine you're writing a large program that gradually turns into hundreds or even thousands of lines of code. Keeping everything in one file becomes inconvenient — the code becomes difficult to maintain and it's hard to find the parts you need. This is where modules come to the rescue! 📦
+So far every program of yours has fitted into a single file, and that was enough. But one day you write a function that would come in handy in the next task too, and the only way to move it there is to copy it. Copy it into three scripts, find a bug, and you are fixing it in three places.
 
-## What is a module?
+So we need a way to keep code in a separate file and pull only what we need out of it. A file like that is called a module.
 
-> A module in Python is simply a file with a `.py` extension,
-> containing Python code (functions, classes, variables),
-> which can be imported and used in other programs.
+## You already use modules
 
-Modules help:
+The line `import math` has come up in the chapters on libraries. Let's look closer at what it actually does.
 
--   Organize related code into separate files
--   Reuse code in different programs
--   Avoid name conflicts
--   Make code more readable and maintainable
+```python
+import math
+
+print(math.sqrt(144))
+<output>
+12.0
+</output>
+print(type(math))
+<output>
+<class 'module'>
+</output>
+```
+
+`import` doesn't paste somebody else's file into yours. It creates a **module object** and puts it in a variable called `math`. From then on `math.sqrt` is an ordinary attribute access, exactly like `"text".upper()`.
+
+> A module is a file with a `.py` extension (a few built-in ones such as `math` have no file at all, they are baked into the interpreter). Everything defined in it (functions, classes, variables) becomes an attribute of the module object after the import.
 
 ## Creating your own module
 
-Creating a module in Python is very simple — just write code in a file with a `.py` extension:
+Now let's make such a file ourselves. Say we have a small script that works out prices: it adds VAT and applies discounts. The calculation itself goes into `prices.py`, while `main.py` keeps only the printing of results:
 
-Let's create a mymath.py file:
-
-```python
-# mymath.py
-
-"""
-Module with mathematical functions.
-"""
-
-# Constants
-PI = 3.14159
-
-# Functions
-def add(a, b):
-    """Addition of two numbers."""
-    return a + b
-
-def subtract(a, b):
-    """Subtraction of one number from another."""
-    return a - b
-
-def multiply(a, b):
-    """Multiplication of two numbers."""
-    return a * b
-
-def divide(a, b):
-    """Division of one number by another."""
-    if b == 0:
-        raise ValueError("Division by zero is not possible")
-    return a / b
-```
-
-That's it! Now we have a `mymath` module that contains a constant `PI` and four functions.
-
-## Importing modules
-
-To use your module in other programs, you need to import it. Python offers several import methods:
-
-### Importing the entire module
+**prices.py**
 
 ```python
-# Assume that the mymath.py file is in the same directory
-import mymath
+"""Price calculations: VAT and discounts."""
 
-# Using functions from the module
-result = mymath.add(5, 3)
-print(f"5 + 3 = {result}")
+VAT = 0.2
 
-# Using a constant from the module
-area = mymath.PI * 5**2
-print(f"Area of a circle with radius 5: {area}")
+
+def with_vat(price):
+    """Price including VAT."""
+    return round(price * (1 + VAT), 2)
+
+
+def discount(price, percent):
+    """Price after a percentage discount."""
+    return round(price * (1 - percent / 100), 2)
+
 ```
 
-### Importing specific elements
+**main.py**
 
 ```python
-# Importing only specific functions
-from mymath import add, multiply
+import prices
 
-# Now you can use functions directly, without the mymath prefix
-print(f"5 + 3 = {add(5, 3)}")
+print(prices.with_vat(100))  # 120.0
+print(prices.discount(1000, 15))  # 850.0
+print(prices.VAT)  # 0.2
 
-print(f"5 * 3 = {multiply(5, 3)}")
-
-# But other functions are not available
-# print(subtract(5, 3))  # Will raise an error
 ```
 
-### Importing with renaming
+`main.py` says `import prices`, and Python finds `prices.py` in the same folder. The module name comes from the file name: drop the `.py` and you get `prices`. That is all the import needs.
+
+Since the module name is the file name, name your files in snake_case: `user_interface.py`, not `UserInterface.py`. And not `random.py`: a file named after a standard library module shadows the real one.
+
+## A module's code runs exactly once
+
+On an import Python executes the file top to bottom. In `boot.py` below the `print` sits at the top level, not inside a function, so it fires on import. Let's import that module on two consecutive lines:
+
+**boot.py**
 
 ```python
-# Importing a module with an alias
-import mymath as mm
+print("boot.py is running")
 
-print(f"5 - 3 = {mm.subtract(5, 3)}")
+READY = True
+
 ```
 
-### Importing all elements
+**main.py**
 
 ```python
-# Importing all elements from a module
-# (this is generally not recommended, as it can lead to name conflicts)
-from mymath import *
+import boot
+import boot
 
-print(f"PI = {PI}")
+print("and there were two import lines")
 
-print(f"5 / 2 = {divide(5, 2)}")
 ```
-
-## Module structure
-
-A good module should have a clear structure:
-
-1. **Documentation** — at the beginning of the module (documentation strings in triple quotes)
-2. **Imports** — first the standard library, then third-party libraries, then your own modules
-3. **Constants** — global constants
-4. **Classes** — class definitions
-5. **Functions** — function definitions
-6. **Execution code** — code that should be executed when the module is run as a standalone program
-
-## Packages
-
-When your project becomes large, you can organize related modules into packages.
-
-> A package in Python is a directory containing modules and an `__init__.py` file, which indicates to Python that this directory should be treated as a package.
-
-Example package structure:
 
 ```text
-mypackage/
-│
-├── __init__.py
-├── module1.py
-├── module2.py
-└── subpackage/
-    ├── __init__.py
-    └── module3.py
+boot.py is running
+and there were two import lines
 ```
 
-### Creating a package
+Even though there were two `import` lines, the file ran once: Python remembers the modules it has already finished and on a repeated import hands back the same object. Hence the practical takeaway: the top level of a module holds definitions, not actions — whatever is written there runs on the very first import, even if none of its functions are ever used.
 
-1. Create a directory with the package name
-2. Add an `__init__.py` file (can be empty)
-3. Add your modules (`.py` files)
+## from ... import: the name moves in with you
 
-The `__init__.py` file is executed when the package is imported. It can be empty or contain initialization code:
+Typing `prices.` before every call gets tiring. The `from ... import` form takes a specific name out of the module and puts it straight into your program. In the example below both import forms sit side by side on purpose, so that the last line can compare the result — you wouldn't write it that way in ordinary code.
+
+**prices.py**
 
 ```python
-# mypackage/__init__.py
+"""Price calculations: VAT and discounts."""
 
-"""
-My first package.
-"""
+VAT = 0.2
 
-# Initialization code
-print("Package mypackage loaded")
 
-# Variables available when importing the package
-__version__ = '0.1'
+def with_vat(price):
+    """Price including VAT."""
+    return round(price * (1 + VAT), 2)
 
-# You can automatically import modules when importing the package
-from . import module1
-from . import module2
+
+def discount(price, percent):
+    """Price after a percentage discount."""
+    return round(price * (1 - percent / 100), 2)
+
 ```
 
-### Importing from a package
+**main.py**
 
 ```python
-# Assume we have a mypackage as described above
+import prices
+from prices import with_vat
 
-# Importing a module from a package
-import mypackage.module1
+print(with_vat(100))  # 120.0
+print(with_vat is prices.with_vat)  # True
 
-# Importing specific elements from a module in a package
-from mypackage.module2 import some_function
-
-# Importing from a subpackage
-import mypackage.subpackage.module3
-
-# Relative imports (inside package modules)
-# from . import module2  # import from the same directory
-# from .. import module1  # import from the parent directory
 ```
 
-## Special module variables
+The last line is the important one. No copy of the function was made: `with_vat` and `prices.with_vat` are two names for one object. `from ... import` isn't "another way to import", it's an extra step: first the module is imported in full (with all its code), then one of its names is copied into your namespace.
 
-In Python, modules have several special variables:
+So you have three forms, and you choose between them like this:
 
-### name
+- **You need many names from the module, or it matters where a name came from** — keep the prefix:
 
-The `__name__` variable allows you to determine whether the module is run as a program or imported:
+    ```python
+    import prices
 
-```python
-# mymodule.py
+    print(prices.with_vat(100))
+    ```
 
-def some_function():
-    return "Function executed"
+- **You need two or three functions and call them often** — take them by name, the code gets shorter:
 
-# This code will only run if the module is run directly
-if __name__ == "__main__":
-    print("Module run as a program")
-    print(some_function())
-else:
-    print("Module imported")
-```
+    ```python
+    from prices import with_vat, discount
 
-If you run this module directly:
+    print(with_vat(100))
+    ```
+
+- **The module name is long or already taken by a variable of yours** — bring it in under a short name:
+
+    ```python
+    import prices as p
+
+    print(p.with_vat(100))
+    ```
+
+That last form is exactly why people write `import pandas as pd`.
+
+## Telling a run apart from an import
+
+As we saw, an import executes the whole code of a module. So the code inside `prices.py` runs in both cases:
 
 ```bash
-$ python mymodule.py
-Module run as a program
-Function executed
+python prices.py   # launching the module itself
+python main.py     # launching the program that imports it
 ```
 
-If you import this module:
+But sometimes code is only wanted when the file itself is launched. A check along the lines of "do the functions compute the right thing", say: handy for the author, pure noise for whoever imports the module.
+
+The `__name__` variable, which every module has, is what tells the two apart. On an import it holds the module's name, here `"prices"`. In a file that was launched directly it always holds `"__main__"`. So a condition like this is true only on a direct launch:
 
 ```python
-import mymodule  # Will output: "Module imported"
+if __name__ == "__main__":
+    print("check:", with_vat(100))
 ```
 
-### all
+In `prices.py` below that check sits at the very bottom, while `main.py` on the next tab simply imports the module:
 
-The `__all__` variable defines which names will be imported when using `from module import *`:
-
-```python
-# mymodule.py
-
-__all__ = ['public_function', 'PUBLIC_CONSTANT']
-
-PUBLIC_CONSTANT = 42
-_PRIVATE_CONSTANT = 43  # Starts with _, considered private
-
-def public_function():
-    return "This is a public function"
-
-def _private_function():
-    return "This is a private function"
-```
-
-Now:
+**prices.py**
 
 ```python
-from mymodule import *
-# Only available: public_function and PUBLIC_CONSTANT
-# _PRIVATE_CONSTANT and _private_function are not imported
-```
+"""Price calculations: VAT and discounts."""
 
-## Best practices when working with modules
+VAT = 0.2
 
-1. **One module — one responsibility**: Each module should be responsible for one specific functionality.
 
-2. **Clear module names**: Use descriptive but concise names (e.g., `data_processing.py`, `user_interface.py`).
+def with_vat(price):
+    """Price including VAT."""
+    return round(price * (1 + VAT), 2)
 
-3. **Documentation**: Each module should begin with documentation describing its purpose.
 
-4. **Imports at the beginning of the file**: All imports should be at the beginning of the module.
+def discount(price, percent):
+    """Price after a percentage discount."""
+    return round(price * (1 - percent / 100), 2)
 
-5. **Explicit imports**: Prefer `from module import specific_thing` over `from module import *`.
-
-6. **Private names**: Begin names of "private" functions and variables with an underscore (`_private_function`).
-
-7. **Module testing**: Use the `if __name__ == "__main__":` block for testing the module.
-
-## Understanding Check
-
-Let's check how well you've understood the topic of modules:
-
-**What will be output when executing the following code?**
-
-```python
-# file: test_module.py
-def hello():
-    return "Hello, world!"
 
 if __name__ == "__main__":
-    print("Module run directly")
-else:
-    print("Module imported")
+    print("check:", with_vat(100))
 
-# file: main.py
-import test_module
-print(test_module.hello())
 ```
 
+**main.py**
 
-Remember, modules and packages help apply the "Don't Repeat Yourself" (DRY) principle and make your programs more professional. Organize your code wisely, and it will be much easier for you to develop it in the future! 💪
+```python
+import prices
+
+print("total:", prices.with_vat(100))
+
+```
+
+```text
+total: 120.0
+```
+
+We launched `main.py`, and the output holds only its own line: `__name__` inside `prices.py` equals `"prices"`, the condition is false, the check stayed quiet. Launching the module directly would have printed `check: 120.0`.
+
+This is how one file plays two roles: a set of functions for other code, and a standalone program. That block is where you put everything that must not happen on import: starting the program, parsing command-line arguments, checks like ours.

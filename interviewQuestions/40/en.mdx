@@ -1,7 +1,7 @@
 ---
 meta:
-    title: 'What is the difference between threading and multiprocessing in Python?'
-    description: 'threading is better suited for I/O bounds tasks, while multiprocessing is used for CPU-bound computation. Learn about the GIL and choosing the right concurrency model in Python.'
+    title: "What is the difference between threading and multiprocessing in Python?"
+    description: "threading is better suited for I/O bounds tasks, while multiprocessing is used for CPU-bound computation. Learn about the GIL and choosing the right concurrency model in Python."
 ---
 
 ## Multithreading (threading):
@@ -48,17 +48,17 @@ for p in processes:
 
 The GIL is a CPython mechanism that allows **only one thread** to execute Python bytecode at a time. As a result:
 
--   Threads **do not speed up** tasks performing heavy calculations (CPU-bound tasks).
--   Threads **do speed up** tasks waiting on external events (I/O-bound tasks): network requests, reading files.
+- Threads **do not speed up** tasks performing heavy calculations (CPU-bound tasks).
+- Threads **do speed up** tasks waiting on external events (I/O-bound tasks): network requests, reading files.
 
 ## When to use which:
 
--   **threading** — for I/O-bound tasks: file downloads, API calls, database queries.
--   **multiprocessing** — for CPU-bound tasks: data processing, complex mathematical calculations, and algorithms.
+- **threading** — for I/O-bound tasks: file downloads, API calls, database queries.
+- **multiprocessing** — for CPU-bound tasks: data processing, complex mathematical calculations, and algorithms.
 
-| Feature            | threading     | multiprocessing   |
-|--------------------|---------------|-------------------|
-| Memory             | Shared        | Separate          |
-| GIL impact         | Constrained   | Unaffected        |
-| Overhead           | Low           | High              |
-| Best used for      | I/O-bound     | CPU-bound         |
+| Feature       | threading   | multiprocessing |
+| ------------- | ----------- | --------------- |
+| Memory        | Shared      | Separate        |
+| GIL impact    | Constrained | Unaffected      |
+| Overhead      | Low         | High            |
+| Best used for | I/O-bound   | CPU-bound       |

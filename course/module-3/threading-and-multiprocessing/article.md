@@ -1,6 +1,16 @@
+---
+meta:
+    title: "Threads and processes in Python: threading and multiprocessing"
+    description: "The threading module for I/O-bound tasks and multiprocessing for CPU-bound. Creation, synchronization with Lock and Queue, choosing the right approach."
+---
+
 # Threads and processes in Python
 
-From the intro: I/O-bound tasks need **threads** (`threading`), CPU-bound tasks need **processes** (`multiprocessing`). This article covers both. The APIs are nearly identical, so once you learn one the other comes for free.
+Eight heavy computations through a `ThreadPoolExecutor` take about twelve seconds. Change one word — `Thread` to `Process` — and the same eight finish in three or four. That gap is the whole difference between threads and processes.
+
+You remember the split from the intro: **threads** (`threading`) for I/O, **processes** (`multiprocessing`) for computation. This article covers both. The APIs are nearly identical, so once you learn one the other comes for free.
+
+![Illustration: left panel shows threading with one Process containing Thread 1-4 with shared memory and a GIL icon; right panel shows multiprocessing with three separate processes, each with its own Python and memory, with CPU cores below; caption: threads share memory and GIL, processes are isolated and truly parallel](https://python-academy.org/static/guidePage/threading-and-multiprocessing/threads-vs-processes-en.webp "Threads share memory inside one process (GIL); processes are isolated and can run on separate CPU cores")
 
 ## threading: threads inside one process
 
@@ -25,14 +35,14 @@ t2.join()
 print("All threads done")
 ```
 
--   `target` — the function the thread runs
--   `args` — a tuple of arguments
--   `start()` — starts the thread
--   `join()` — blocks the calling thread until this one finishes
+- `target` — the function the thread runs
+- `args` — a tuple of arguments
+- `start()` — starts the thread
+- `join()` — blocks the calling thread until this one finishes
 
 When you run this, you'll see something like:
 
-```
+```text
 Thread A: sleeping for 2s
 Thread B: sleeping for 1s
 Thread B: done
@@ -44,7 +54,28 @@ Thread B started second but finished first — its `sleep` is shorter, and `t1.j
 
 ## Protecting shared data: Lock
 
-Threads share memory. If two threads modify the same variable, the **result is unpredictable** (race condition). The fix is a `Lock`:
+Threads share memory. If two threads modify the same variable without protection, the **result is unpredictable** (race condition). Let's look: five threads each increment a counter a million times, so we should get 5,000,000.
+
+```python
+import threading
+
+counter = 0
+
+def increment():
+    global counter
+    for _ in range(1_000_000):
+        counter += 1
+
+threads = [threading.Thread(target=increment) for _ in range(5)]
+for t in threads:
+    t.start()
+for t in threads:
+    t.join()
+
+print(counter)        # e.g. 3137095 — and a different number every run
+```
+
+We expected 5,000,000 but got less — and next time the number will differ. The reason: `counter += 1` isn't one action but three (read the value, add one, write it back), and threads sneak in between the steps, overwriting each other's increments. The fix is a `Lock`: while one thread is inside `with lock`, the others wait their turn.
 
 ```python
 import threading
@@ -54,7 +85,7 @@ lock = threading.Lock()
 
 def increment():
     global counter
-    for _ in range(100_000):
+    for _ in range(1_000_000):
         with lock:                # automatic acquire/release
             counter += 1
 
@@ -64,12 +95,10 @@ for t in threads:
 for t in threads:
     t.join()
 
-print(counter)        # 500000 — correct
+print(counter)        # 5000000 — now always correct
 ```
 
-Without the `lock`, the total ends up at a random number below 500_000: threads "overwrite" each other's increments. The `with lock:` context manager is the standard usage and guarantees release even on exceptions.
-
-`threading` also has `Event`, `Semaphore`, `Condition`, `RLock`. In practice, `Lock` and `Queue` (next section) cover 90% of cases. The rest is for non-trivial coordination.
+The `with lock:` context manager is the standard usage: it guarantees release even on exceptions. `threading` also has `Event`, `Semaphore`, `Condition`, `RLock`. In practice, `Lock` and `Queue` (next section) cover 90% of cases. The rest is for non-trivial coordination.
 
 ## Sharing data between threads: queue.Queue
 
@@ -193,33 +222,40 @@ from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 def task(x):
     return x * x
 
-# For I/O-bound: threads
-with ThreadPoolExecutor(max_workers=4) as executor:
-    results = list(executor.map(task, range(10)))
+# if __name__ is needed for ProcessPoolExecutor: it spawns processes
+if __name__ == "__main__":
+    # For I/O-bound: threads
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        results = list(executor.map(task, range(10)))
 
-# For CPU-bound: processes
-with ProcessPoolExecutor(max_workers=4) as executor:
-    results = list(executor.map(task, range(10)))
+    # For CPU-bound: processes — only the executor class changes
+    with ProcessPoolExecutor(max_workers=4) as executor:
+        results = list(executor.map(task, range(10)))
 ```
 
 This is the most practical way to parallelize simple tasks. In modern code `concurrent.futures` shows up more often than raw `threading.Thread` or `multiprocessing.Process`.
 
 ## When to pick what
 
-| Task | Tool |
-| --- | --- |
-| Simple I/O-bound in existing synchronous code | `ThreadPoolExecutor` |
-| When you need manual state management (Lock, Queue) | `threading` directly |
-| CPU-bound computation | `ProcessPoolExecutor` or `multiprocessing.Pool` |
-| Thousands of network connections | **asyncio** (next articles) |
+| Task                                                | Tool                                            |
+| --------------------------------------------------- | ----------------------------------------------- |
+| Simple I/O-bound in existing synchronous code       | `ThreadPoolExecutor`                            |
+| When you need manual state management (Lock, Queue) | `threading` directly                            |
+| CPU-bound computation                               | `ProcessPoolExecutor` or `multiprocessing.Pool` |
+| Thousands of network connections                    | **asyncio** (next articles)                     |
 
 For high-volume I/O, `asyncio` is better: single thread, minimal switching overhead. But it requires rewriting the code in `async` style.
 
-## What's next?
-
-The next two articles cover **asyncio**: the third and most efficient way to organize concurrent I/O. It really shines for web servers, bots, and API clients.
-
----
+## Understanding check
 
 **Why does `multiprocessing` work for CPU-bound tasks while `threading` does not?**
 
+1. Processes start faster than threads — The opposite: creating a process is more expensive than creating a thread. The advantage of multiprocessing is elsewhere.
+
+2. **Correct answer:** Each process has its own Python interpreter and its own GIL, so processes really run in parallel on multiple CPU cores — Correct. The GIL permits only one thread per process to execute Python bytecode at a time. Multiple processes run multiple interpreters, each with its own GIL and its own core — that is true parallelism.
+
+3. multiprocessing uses async features that threading lacks — Neither of them uses async. That is a separate model (asyncio).
+
+4. threading cannot be used on multicore CPUs — threading works on any CPU. The limitation is that, due to the GIL, threads don't execute Python code simultaneously. For I/O-bound work that doesn't matter since the GIL is released while waiting.
+
+The next two articles cover **asyncio**: the third and most efficient way to organize concurrent I/O. It really shines for web servers, bots, and API clients.

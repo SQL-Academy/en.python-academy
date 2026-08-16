@@ -1,193 +1,196 @@
-# Third-Party Libraries and pip
+---
+meta:
+    title: "Third-Party Libraries and pip"
+    description: "Why Python needs third-party libraries, how to install them with pip, why every project gets its own virtual environment, and how to pin dependencies in requirements.txt."
+---
 
-Python's built-in libraries are just a basic set of tools, like a screwdriver and a hammer. But to create truly amazing projects, you need specialized tools. And this is where third-party libraries come to the rescue! 🛠️
+# Third-party libraries and pip
 
-## What are third-party libraries?
+Say we have a sales export in front of us: a list of receipts, each with a product, a quantity, and a price. We need the revenue per product.
 
-> Third-party libraries are Python modules that are not included in the standard library and are developed by independent developers or organizations.
+Everything required is something we have already covered — a dictionary and a loop:
 
-Third-party libraries help:
+```python
+sales = [
+    {"product": "Coffee", "quantity": 3, "price": 150},
+    {"product": "Bread", "quantity": 2, "price": 60},
+    {"product": "Coffee", "quantity": 1, "price": 150},
+    {"product": "Milk", "quantity": 4, "price": 45},
+    {"product": "Bread", "quantity": 2, "price": 60},
+]
 
--   Solve specific tasks in different areas
--   Save time by using ready-made solutions
--   Simplify complex operations that require deep knowledge
--   Create more powerful and functional applications
+revenue = {}
+for row in sales:
+    revenue[row["product"]] = revenue.get(row["product"], 0) + row["quantity"] * row["price"]
 
-## What is pip?
+print(revenue)
+<output>
+{'Coffee': 600, 'Bread': 240, 'Milk': 180}
+</output>
+```
 
-> pip (Package Installer for Python) is a package management system used to install and manage software packages written in Python.
+It works. The trouble starts with the next request: sort it descending, compute the average receipt, drop anything under a hundred, group by day as well. Every item is one more loop, and an hour later you are looking at three hundred lines nobody wants to touch.
 
-pip allows you to:
+Yet the task is an ordinary one; thousands of people solve it every day. So a tool for it was written long ago: the `pandas` library.
 
--   Install packages from the Python Package Index (PyPI) and other sources
--   Update and remove packages
--   Manage dependencies (other packages required for operation)
--   Create a list of project dependencies for subsequent installation
+## The same thing in pandas
 
-## Installing and using pip
+```python
+import pandas as pd
 
-Usually pip is already installed along with Python. You can check the presence and version of pip like this:
+sales = [
+    {"product": "Coffee", "quantity": 3, "price": 150},
+    {"product": "Bread", "quantity": 2, "price": 60},
+    {"product": "Coffee", "quantity": 1, "price": 150},
+    {"product": "Milk", "quantity": 4, "price": 45},
+    {"product": "Bread", "quantity": 2, "price": 60},
+]
+
+table = pd.DataFrame(sales)
+table["total"] = table["quantity"] * table["price"]
+
+print(table.groupby("product")["total"].sum().to_string())
+<output>
+product
+Bread     240
+Coffee    600
+Milk      180
+</output>
+```
+
+The loop collapsed into a single line that almost reads as English: group by product, take the "total" column, add it up. And the sorting that would have cost you extra code is one more call in the same chain:
+
+```python
+import pandas as pd
+
+sales = [
+    {"product": "Coffee", "quantity": 3, "price": 150},
+    {"product": "Bread", "quantity": 2, "price": 60},
+    {"product": "Coffee", "quantity": 1, "price": 150},
+    {"product": "Milk", "quantity": 4, "price": 45},
+    {"product": "Bread", "quantity": 2, "price": 60},
+]
+
+table = pd.DataFrame(sales)
+table["total"] = table["quantity"] * table["price"]
+
+print(table.groupby("product")["total"].sum().sort_values(ascending=False).to_string())
+<output>
+product
+Coffee    600
+Bread     240
+Milk      180
+</output>
+```
+
+This is what third-party libraries are for. Somebody already walked the path from "sum numbers per group" to "filter, recompute and draw a chart", debugged it across thousands of other people's projects, and handed it to you finished.
+
+## Where they come from
+
+What arrives together with Python is only the standard library, and `pandas` is not part of it. On a clean machine the line `import pandas` ends in a `ModuleNotFoundError` until the package is installed.
+
+> Third-party libraries are written by independent developers and companies, who publish them to a shared catalogue called [PyPI](https://pypi.org/) (the Python Package Index). That is where you pull them into your project from.
+
+They are downloaded and installed by `pip`, the package manager that arrives together with Python. To check it is there:
 
 ```bash
 pip --version
 ```
 
-Expected result:
+## Where to install: the environment comes first
 
-```bash
-pip 23.1.2 from /usr/local/lib/python3.11/site-packages/pip (python 3.11)
-```
+By default `pip` puts the package where Python itself lives, and from that moment every program of yours sees it. While there is one program, that is convenient. Once there are two, it turns out the old one needs `django 3.0` and the new one `django 4.2`, and two versions cannot sit in one place. Upgrade for the new one and you break the old one.
 
-### Basic pip commands
+That's why every project gets its own virtual environment: a set of packages that knows nothing about the neighbours.
 
-#### Installing a package
+> A virtual environment (venv) is an isolated copy of Python with its own package folder. Projects stop sharing dependencies and can no longer break each other.
 
-```bash
-pip install requests
-```
+![Two projects, each with its own venv holding its own package versions: django 3.0 + requests 2.20 in project A, django 4.2 + requests 2.31 in project B](https://python-academy.org/static/guidePage/third-party-libraries/venv-isolation-en.webp "Virtual environments isolate dependencies")
 
-Expected result:
+We create the environment and step into it:
 
-```bash
-Collecting requests
-  Downloading requests-2.31.0-py3-none-any.whl (62 kB)
-     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 62.6/62.6 kB 1.2 MB/s eta 0:00:00
-Installing collected packages: requests
-Successfully installed requests-2.31.0
-```
+**macOS / Linux**
 
-#### Installing a specific version
-
-```bash
-pip install requests==2.25.1
-```
-
-Expected result:
-
-```bash
-Collecting requests==2.25.1
-  Downloading requests-2.25.1-py2.py3-none-any.whl (61 kB)
-     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 61.2/61.2 kB 1.8 MB/s eta 0:00:00
-Installing collected packages: requests
-Successfully installed requests-2.25.1
-```
-
-#### List of installed packages
-
-```bash
-pip list
-```
-
-Expected result:
-
-```bash
-Package    Version
----------- ---------
-certifi    2023.5.7
-charset-normalizer 3.1.0
-idna       3.4
-pip        23.1.2
-requests   2.31.0
-setuptools 67.8.0
-urllib3    2.0.3
-```
-
-#### Removing a package
-
-```bash
-pip uninstall requests -y
-```
-
-Expected result:
-
-```bash
-Found existing installation: requests 2.31.0
-Uninstalling requests-2.31.0:
-  Successfully uninstalled requests-2.31.0
-```
-
-## Popular third-party libraries
-
-Python has a huge number of third-party libraries for a wide variety of tasks. Here are some of the most popular and useful:
-
-| Library            | Description                                       | Main application                              | Link                                                               |
-| ------------------ | ------------------------------------------------- | --------------------------------------------- | ------------------------------------------------------------------ |
-| **Requests**       | Convenient handling of HTTP requests              | Interaction with web resources, APIs          | [Documentation](https://requests.readthedocs.io/)                  |
-| **Pandas**         | Powerful tool for data analysis                   | Processing and analyzing tabular data         | [Documentation](https://pandas.pydata.org/)                        |
-| **NumPy**          | Working with arrays and mathematical calculations | Scientific computing, array operations        | [Documentation](https://numpy.org/)                                |
-| **Matplotlib**     | Data visualization                                | Creating plots and charts                     | [Documentation](https://matplotlib.org/)                           |
-| **Seaborn**        | Statistical data visualization                    | Beautiful statistical graphics                | [Documentation](https://seaborn.pydata.org/)                       |
-| **scikit-learn**   | Machine learning                                  | Building and training machine learning models | [Documentation](https://scikit-learn.org/)                         |
-| **TensorFlow**     | Deep learning and neural networks                 | Complex deep learning models                  | [Documentation](https://www.tensorflow.org/)                       |
-| **PyTorch**        | Deep learning with dynamic computational graphs   | Research in deep learning                     | [Documentation](https://pytorch.org/)                              |
-| **Flask**          | Micro-framework for web development               | Creating web applications and APIs            | [Documentation](https://flask.palletsprojects.com/)                |
-| **Django**         | Full-featured web framework                       | Large web projects                            | [Documentation](https://www.djangoproject.com/)                    |
-| **Beautiful Soup** | Parsing HTML and XML                              | Extracting data from web pages                | [Documentation](https://www.crummy.com/software/BeautifulSoup/)    |
-| **Pillow**         | Image processing                                  | Editing and analyzing images                  | [Documentation](https://pillow.readthedocs.io/)                    |
-| **SQLAlchemy**     | ORM for working with databases                    | Interaction with SQL databases                | [Documentation](https://www.sqlalchemy.org/)                       |
-| **Pygame**         | Creating games and multimedia applications        | 2D game development                           | [Documentation](https://www.pygame.org/)                           |
-| **PyQt**           | Creating desktop applications                     | Graphical user interfaces (GUI)               | [Documentation](https://www.riverbankcomputing.com/software/pyqt/) |
-
-The choice of library depends on the specific task you want to solve. The Python community is very active, and ready-made solutions already exist for most practical tasks, which can be installed via pip.
-
-Example of installing a popular library:
-
-```bash
-# Installing pandas for data analysis
-pip install pandas
-
-# Installing Flask for web development
-pip install flask
-```
-
-## Virtual environments
-
-When working with different projects, you often need to use different versions of libraries. For this purpose, Python has virtual environments.
-
-> A virtual environment is an isolated Python environment where you can install packages without affecting other projects or the system Python.
-
-### Creating a virtual environment
-
-```bash
-# Creating a virtual environment
+```sh
 python -m venv myenv
-
-# Activating the virtual environment
-# On Windows:
-myenv\Scripts\activate
-
-# On macOS/Linux:
 source myenv/bin/activate
+```
 
-# After activation, the environment name will appear at the beginning of the command prompt
+**Windows**
+
+```powershell
+python -m venv myenv
+myenv\Scripts\activate
+```
+
+You can tell you are inside by the start of the prompt, where the environment name shows up:
+
+```bash
 (myenv) $
 ```
 
-### Installing packages in a virtual environment
+## Installing a package
+
+While the environment is active, `pip` puts packages into it rather than into the shared folder:
 
 ```bash
-# Installing packages in the activated virtual environment
-pip install pandas matplotlib
+pip install pandas
 ```
 
-### Saving and installing dependencies
+If you need a specific version, spell it out after a double equals sign:
 
 ```bash
-# Saving the list of installed packages
+pip install pandas==2.0.3
+```
+
+To see what is already installed, use `pip list`. To remove something, `pip uninstall pandas`.
+
+## So the same thing builds for a colleague
+
+The environment stays on your machine, while only the code travels to the repository. So that your colleague and the server end up with exactly the same versions, the dependency list is saved to a file:
+
+```bash
 pip freeze > requirements.txt
+```
 
-# The contents of the requirements.txt file will look something like this:
-# matplotlib==3.7.2
-# numpy==1.25.2
-# pandas==2.0.3
-# ...
+Inside it, one package and its exact version per line:
 
-# Installing packages from the requirements.txt file
+```text
+numpy==1.25.2
+pandas==2.0.3
+python-dateutil==2.8.2
+```
+
+The file goes into the repository next to the code, and from then on anyone who clones the project reproduces the environment with one command:
+
+```bash
 pip install -r requirements.txt
 ```
 
+The versions are pinned, so what they get is exactly what you have, instead of "well, it works on my machine".
+
+## Where to go next
+
+PyPI holds hundreds of thousands of packages, but a handful is enough to start with:
+
+| When you'll need it              | Library            |
+| -------------------------------- | ------------------ |
+| Tables, reports, analytics       | `pandas`           |
+| HTTP calls to someone's API      | `requests`         |
+| Pulling data out of an HTML page | `beautifulsoup4`   |
+| Charts and diagrams              | `matplotlib`       |
+| Your own web service or API      | `flask`, `fastapi` |
+
+The rest you look up on PyPI at the moment you hit the task. There is no need to memorise the list in advance 🎓.
+
 ## Understanding Check
 
-Let's check how well you've learned about third-party libraries and pip:
+**Why does every project get its own virtual environment?**
 
-**Which command will correctly install pandas version 1.5.0?**
+1. **Correct answer:** So projects don't share package versions and break each other — Correct. Different projects need different versions of the same library, and one shared folder can only hold one of them. A separate environment removes the conflict.
+
+2. So the code in the project runs faster — An environment has no effect on execution speed: it is about where packages live, not about how the code runs.
+
+3. So you don't have to install pip separately for each project — pip arrives together with Python, there is no need to install it separately. The environment solves a different problem — conflicting versions.
+
+4. So Python doesn't have to be installed on the computer at all — The Python installed on your computer is still needed: it is what creates the virtual environment via python -m venv.

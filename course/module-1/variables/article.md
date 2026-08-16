@@ -1,23 +1,35 @@
+---
+meta:
+    title: "Variables in Python"
+    description: "What variables are in Python. Creating variables, multiple assignment, naming rules and best practices."
+---
+
 # Variables in Python
 
-Hello! Today we'll get acquainted with one of the most important concepts in programming — variables. Think of them as labeled "boxes" (named memory areas) where you can store different things: numbers, texts, lists, and much more.
+Suppose we're writing a greeting program. We don't know the user's name in advance: it will only appear when the program runs. So in our code we need a way to refer to that future name without knowing it yet. That's exactly what variables are for.
+
+```python
+name = "John"
+print("Hello, " + name + "!")
+```
+
+In this code `name` is a **label** that tells Python where the string `"John"` lives in memory. Whenever `name` appears later, Python looks at what the label points to and substitutes the value.
+
+![A variable as a label pointing to an object in memory](https://python-academy.org/static/guidePage/variables/label-model-en.webp 'name → "John"')
 
 ## What is a variable?
 
-> A variable in Python is a named reference to an object in memory, whose type is determined dynamically and can change.
+> A variable in Python is a name bound to an object in memory. Python infers the object's type automatically, and that binding can be changed at any time.
 
-Working with variables in Python is extremely simple:
+Three conveniences follow from this:
 
--   No need to declare variables before using them
--   No need to specify the type — Python will determine it automatically
--   You can change the variable type at any time
-
-A variable is created at the first assignment, and then you can use it anywhere in your program.
+- you don't have to declare a variable beforehand: it appears on the first assignment
+- you don't have to specify the type: Python sees what's on the right and remembers
+- you can rebind a name to another value at any moment
 
 ## Creating and using variables
 
-To create a variable, use the `=` operator.  
-Example:
+A variable is created with the `=` operator. The name goes on the left, the value the name will point to goes on the right:
 
 ```python
 # Creating variables of different types
@@ -28,83 +40,85 @@ is_student = True      # Boolean variable
 courses = ["Python", "SQL", "JavaScript"]  # List variable
 ```
 
-After this, when executing `print()` or other operations, the variable name will be replaced with its value:
+Once created, you can use the name anywhere its value is needed:
 
 ```python
 name = "John"
-# Using the variable in a greeting string
-print("Hello, " + name + "! 👋")
+print("Hello, " + name + "!")
+<output>
+Hello, John!
+</output>
 
 age = 25
-# Using the variable in a calculation
 next_year_age = age + 1
-print(f"Next year you will be {next_year_age} years old! 🎂")
+print(f"Next year you'll be {next_year_age} years old")
+<output>
+Next year you'll be 26 years old
+</output>
 ```
+
+Notice the letter `f` before the quotes in the second example. It means that inside the string you can write variable names in curly braces, and Python will substitute their values. These are called f-strings, and you'll meet them often from here on — we'll cover them properly in the chapter on strings.
 
 ## Multiple assignment
 
-Python allows you to assign values to multiple variables in a single line:
-
-```python
-# Assigning the same value to multiple variables
-x = y = z = 0
-print(f"x = {x}, y = {y}, z = {z}")
-
-# Assigning different values to multiple variables
-a, b, c = 1, 2, 3
-print(f"a = {a}, b = {b}, c = {c}")
-```
-
-You can also "unpack" a collection into multiple variables:
+The most common use is **unpacking**: a collection on the right, several names on the left. They receive the values in order:
 
 ```python
 coordinates = (10, 20, 30)
 x, y, z = coordinates
-print(f"Coordinates: x={x}, y={y}, z={z}")
+print(f"x={x}, y={y}, z={z}")
+<output>
+x=10, y=20, z=30
+</output>
 ```
 
-To swap values between two variables without using an intermediate variable, use simple assignment:
+The same logic gives an elegant way to swap two variables without a temporary one:
 
 ```python
-# Swapping variable values
 a = 5
 b = 10
-print(f"Before swap: a = {a}, b = {b}")
-
-a, b = b, a  # Value swap
-print(f"After swap: a = {a}, b = {b}")
+a, b = b, a
+print(f"a = {a}, b = {b}")
+<output>
+a = 10, b = 5
+</output>
 ```
+
+The right side first builds a tuple `(10, 5)`, then it's unpacked into the left side. No third variable needed.
+
+You can also assign a single value to several names via a chain of `=`:
+
+```python
+x = y = z = 0
+```
+
+This rarely shows up in real code; three separate lines are usually clearer. And with mutable objects the chain creates a single shared reference: `a = b = []` makes `a` and `b` the same list, which is almost never what you wanted.
 
 ## Dynamic typing
 
-Python is a dynamically typed language. The variable type is determined during execution and can change when a new value is assigned:
+Python is a dynamically typed language. The type of a variable is determined at runtime and can change when a new value is assigned. You can check the current type with the `type()` function — it tells you what a value currently is:
 
 ```python
-# Demonstrating variable type changes
 x = 10 # x has type int (integer)
 print(f"x = {x}, type: {type(x)}")
+<output>
+x = 10, type: <class 'int'>
+</output>
 
 x = "ten" # now x has type str (string)
 print(f"x = {x}, type: {type(x)}")
+<output>
+x = ten, type: <class 'str'>
+</output>
 
 x = [1, 2, 3] # now x has type list (list)
 print(f"x = {x}, type: {type(x)}")
+<output>
+x = [1, 2, 3], type: <class 'list'>
+</output>
 ```
 
-To determine the current data type of a variable, use the built-in `type()` function:
-
-```python
-name = "John"
-age = 25
-height = 1.85
-is_student = True
-
-# Determining variable types
-print(f"{name}: {type(name)}")
-print(f"{age}: {type(age)}")
-print(f"{height}: {type(height)}")
-print(f"{is_student}: {type(is_student)}")
-```
+The types themselves — what `str`, `int`, `float` and `bool` are and how they differ — come later, in the lesson on basic data types. For now it's enough that a value has a type, and that the type can change.
 
 ## Naming variables in Python
 
@@ -112,11 +126,11 @@ Good variable names make code understandable and maintainable.
 
 ### Naming rules
 
-1. Names can contain letters, numbers, and underscores (`a-z`, `A-Z`, `0-9`, `_`).
-2. Names must start with a letter or underscore.
-3. You cannot use Python reserved words (e.g., `if`, `for`, `class`).
+1. Names can contain letters, digits and the underscore (`a-z`, `A-Z`, `0-9`, `_`).
+2. A name must start with a letter or underscore.
+3. You can't use Python's reserved words (e.g., `if`, `for`, `class`).
 
-```python
+```python-interactive
 # Valid names
 name = "John"
 age_in_years = 25
@@ -130,72 +144,69 @@ _private_variable = "Non-public information"
 
 ### Best practices for naming variables
 
-In the Python community, there is an official style guide — [PEP 8](https://peps.python.org/pep-0008/), which contains recommendations for naming variables and other aspects of writing clean, understandable Python code.
+The Python community has an official style guide, <a href="https://peps.python.org/pep-0008/" target="_blank">PEP 8</a>. It's not law, but almost all Python code you'll encounter follows it. Your own code will be easier to read if it looks the same.
 
-Following these recommendations is considered good practice and helps write code that is easy to maintain:
-
-1. **Use descriptive names** — let the variable name indicate its purpose
+1. **Use descriptive names**: let the name say what it's for
 
 ```python
-# Better this way ✅
+# Better ✅
 user_age = 25
-print(f"User age: {user_age}")
 
 # Than this ❌
 a = 25
-print(f"Variable a value: {a}")  # What is this variable about?
 ```
 
-2. **Use snake_case style** for variables (lowercase words separated by underscores)
+A month later you'll come back to your own code, and `a` will tell you nothing. `user_age` is a free hint to the reader.
+
+2. **Use snake_case** (lowercase words joined by underscores)
 
 ```python
 # Python style ✅
 first_name = "John"
-print(f"Name: {first_name}")
 
 # Not Python style ❌
 firstName = "John"
-print(f"Name: {firstName}")
 ```
 
-3. **Add the prefix `is_` or `has_`** for boolean variables (bool type)
+Technically both work. But all the Python code around you is in snake_case, and switching between styles within a project tires the eye.
+
+3. **Prefix `is_` or `has_`** for boolean variables
 
 ```python
-# It's immediately clear these are boolean variables ✅
 is_adult = True
 has_permission = False
-
-print(f"Is adult: {is_adult}")
-print(f"Has permission: {has_permission}")
 ```
 
-4. **Use UPPER_CASE** for constants (values that shouldn't change)
+When you see `if is_adult:`, it's immediately clear that the right side is a boolean, not, say, a number of years or a user object. Without the prefix, `adult` doesn't give you that hint.
 
-    ```python
-    # Constants in uppercase ✅
-    MAX_ATTEMPTS = 3
-    PI = 3.14159
-    ```
+4. **UPPER_CASE** for constants
 
-5. **Avoid overly short and unclear names** — saving on characters leads to time wasted when reading code
+```python
+MAX_ATTEMPTS = 3
+PI = 3.14159
+```
 
-    ```python
-    # Poor variable names ❌
-    n = "John"          # Too short
-    x = 25              # Unclear
-    flag = True         # Vague purpose
-    str1 = "String"     # Uninformative
+Python has no true constants: you can rebind `MAX_ATTEMPTS` and the language won't complain. But the convention "anything in uppercase is off-limits" is universal, and everyone respects it.
 
-    # Good variable names ✅
-    user_name = "John"
-    age_in_years = 25
-    is_verified = True
-    welcome_message = "Welcome!"
-    ```
+5. **Avoid overly short names**
+
+```python
+# Bad ❌
+n = "John"
+flag = True
+str1 = "String"
+
+# Good ✅
+user_name = "John"
+is_verified = True
+welcome_message = "Welcome!"
+```
+
+A few extra characters at writing time save minutes at reading time. And code gets read far more often than it's written.
 
 ### Case sensitivity
 
-Python is a case-sensitive language, which means there's a distinction between uppercase and lowercase letters in variable names. The variables `name`, `Name`, and `NAME` are interpreted as three different variables:
+Python is case-sensitive, which means uppercase and lowercase letters are different in variable names. The variables `name`, `Name`, and `NAME` are interpreted as three different variables:
 
 ```python
 name = "John"
@@ -203,21 +214,45 @@ Name = "Peter"
 NAME = "Alex"
 
 print(name)
+<output>
+John
+</output>
 print(Name)
+<output>
+Peter
+</output>
 print(NAME)
+<output>
+Alex
+</output>
 ```
 
-These are three different variables: changing the case in a variable name creates a completely new variable.
+Three different variables: changing the case in a variable name creates a completely new one.
 
-## Understanding check
+## Practice tasks
 
-Let's check how well you've understood the features of working with variables in Python:
+Right below this article there's a block called **Practice tasks**. It's where you can immediately try out what you've just read.
 
-**Which of the following statements most accurately describes variables in Python?**
+### What's already in the editor
 
+The editor on the right holds a starting point: the variable names from the task description and an `=` sign. All that's left is to fill in the values.
 
-## Conclusion
+![Task structure: the description with values on the left, the code starting point on the right, and the "Check" button that runs the check](https://python-academy.org/static/guidePage/variables/exercise-scaffold-en.webp "Task structure")
 
-Great! Now you know what variables are in Python and how to work with them. This is a fundamental concept that will be the foundation for all your future journey in the programming world.
+The left side is the **task description**: what to name and with which values. The colored badges in the description (for example, `John`, `25`, `True`) are the exact values the code expects.
 
-Remember that proper variable naming and understanding their dynamic nature in Python will make your code more readable and maintainable. Experiment, practice, and you'll definitely succeed!
+The **"Check"** button runs your code and compares the result against the tests. You can press it as many times as you like.
+
+### What exactly gets checked
+
+Below the editor there are tabs: "Result" and next to it "Test #1", "Test #2" and so on. A task only counts when every test passes.
+
+Each test tab shows exactly what will be checked: a line of code and the value it should produce. For example, "Test #2" reads `user_age` and expects to find `25` there. You can open the tests at any point, including before the first check.
+
+![How to read the result: every test has its own tab, a checkmark means it passed, and a failed test shows the value you actually got](https://python-academy.org/static/guidePage/variables/exercise-result-en.webp "Result structure")
+
+After the check each tab gets a mark: a green checkmark on the tests that passed, a red cross on the ones that didn't. A failed test opens on its own, and below its code an "Actual result" box appears with the value that actually came out. Compare it with the expected one and the difference becomes obvious.
+
+The "Result" tab holds the overall summary (how many tests passed) along with everything you printed with `print()`. That comes in handy when you want to peek at intermediate values while solving.
+
+In the next lesson we'll wrap code into **functions**: how to give a piece of code a name, pass values into it and get a result back.

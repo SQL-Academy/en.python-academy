@@ -1,15 +1,18 @@
+---
+meta:
+    title: "Introduction to the Python course"
+    description: "Free online Python course: how the course, trainer and sandbox fit together, which devices to learn on, and what a premium account is for."
+---
+
 # About the course
 
-This course, aimed at learning Python, is designed differently than most other courses.
-We will not try to learn all possible Python libraries, instead we will focus our attention on the principles of programming and
-on the foundation of Python fundamentals that will allow you to build any application.
+You can watch ten hours of Python videos, nod along, and still not write a single line yourself. That feeling of "it all made sense in the lecture, but I can't sit down and do it" comes from exactly there.
 
-To achieve this goal, the course is equipped with a large number of exercises that should help build the very necessary connections in our brain, so that in the future you do not have
-to think much when writing Python code for your applications.
+This course is built the other way around. We don't try to march through every Python library — instead we work out how the language itself is put together, and write code right there in the article. You'll pick up whatever library you need in an evening, provided you understand the foundation. It doesn't work in the other direction.
 
-During the course, we strongly recommend that you cultivate a "growth mindset": if you encounter any difficulties trying
-to understand a new topic or doing exercises, try to transform the frustrating experience into a productive one.  
-And the most important thing in this course is **have fun!**
+So there will be a lot of exercises ahead. They aren't box-ticking: the connections you need only form when you fight an error yourself, rather than reading someone else's finished solution. And if something drags — that's a normal part of the process, not a sign that "programming isn't for you".
+
+And the most important thing — **have fun!**
 
 ## Take the course publicly
 
@@ -19,28 +22,38 @@ You can use the hashtag `#python-academy` if you want.
 
 ## Device support
 
-This course is designed to pass from a computer and laptop - the most optimal devices for writing Python code. The course can also be taken from a tablet or from a phone,
-but some functionality may not be available or work incorrectly. Please treat this with understanding.
+The course expects a computer or a laptop — writing code is simply easier with a keyboard. You can also work from a tablet or a phone,
+but some of the functionality will be unavailable or won't behave as intended. Please treat this with understanding.
 
 ## How our site is organized
 
-![How our site is organized](https://python-academy.org/static/guidePage/intro-intro/connections.webp 'How our site is organized')
+![How our site is organized](https://python-academy.org/static/guidePage/intro-intro/sections-en.webp "How our site is organized")
 
 There are 3 main sections on our resource, each of which will be useful in different ways:
 
--   **[Course](/guide)** - is your step-by-step assistant when learning Python. It presents consistent, structured materials, as well as related exercises to consolidate knowledge.
--   **[Trainer](/trainer)** the simulator is a tool to test your knowledge. The tasks in it are ranked by difficulty, so you can choose the ones that are suitable for your current level.
-    Also, solving tasks from the simulator is necessary to obtain a certificate confirming knowledge in Python programming.
--   **[Sandbox](/sandbox)** - is a space for free experimentation with Python code and trying out concepts you've learned.
+- **<a href="https://python-academy.org/en/guide" target="_blank"> Course </a>** - is your step-by-step assistant when learning Python. It presents consistent, structured materials, as well as related exercises to consolidate knowledge.
+- **<a href="https://python-academy.org/en/trainer" target="_blank">Simulator</a>** - is a tool to test your knowledge. The tasks in it are ranked by difficulty, so you can choose the ones that are suitable for your current level.
+  Also, solving tasks from the simulator is necessary to obtain a certificate confirming knowledge in Python programming.
+- **<a href="https://python-academy.org/en/sandbox" target="_blank">Sandbox </a>** - is a space for free experimentation with Python code and trying out concepts you've learned.
 
 ## Premium account
 
-The purchase of [premium account](/premium) is an optional part, we provide the course for everyone absolutely free of charge. But it opens up more opportunities for you
-to study more productively, access to tasks from real interviews at top companies and gives you the opportunity to get a certificate. In addition, this is a great opportunity to support us in the development of this service.
+The basic course, trainer and sandbox are free. A <a href="https://python-academy.org/en/premium" target="_blank">premium account</a> is an optional addition for those who want to go deeper and use everything the platform has to offer.
+
+With a premium account you get:
+
+- access to reference solutions for trainer tasks;
+- the advanced courses "Backend on FastAPI from scratch" and "Product analytics with Python";
+- extended access to the AI assistant and tasks from interviews at top companies;
+- the ability to issue personalised certificates.
+
+Premium lasts 6 months from the date of payment. All the progress you made before the purchase is kept and still counts towards your certificates. Once premium expires, the account becomes free again, while your progress and any certificates you have already issued stay with you.
+
+By buying a premium account you also support the development of Python Academy and help us create new learning materials and features.
 
 ## Progress and certificate acquisition
 
-If you are logged in, you can see the progress bar in the **[trainer](/trainer)** section.
+If you are logged in, you can see the progress bar in the **<a href="https://python-academy.org/en/trainer" target="_blank">trainer</a>** section.
 
 ![Progress bar before receiving a certificate](https://python-academy.org/static/guidePage/intro-intro/progress_bar_en.jpg)
 

@@ -1,26 +1,46 @@
+---
+meta:
+    title: "Encapsulation"
+    description: "How a class protects its data: the single-underscore convention, @property, and read-only attributes."
+---
+
 # Encapsulation in Python
 
-Suppose we're writing a bank account class:
+Let's build a piggy-bank class: `deposit` adds money and refuses a negative amount. The check is there — but getting around it is trivial:
 
 ```python
 class BankAccount:
     def __init__(self, balance):
         self.balance = balance
 
+    def deposit(self, amount):
+        if amount > 0:
+            self.balance += amount
+
 account = BankAccount(1000)
-print(account.balance)        # 1000
-account.balance = -1_000_000  # oops
+
+account.deposit(-500)          # the check won't let this through
+print(account.balance)
+<output>
+1000
+</output>
+
+account.balance = -1_000_000   # but this — go right ahead
+print(account.balance)
+<output>
+-1000000
+</output>
 ```
 
-The class doesn't object: `balance` is a public attribute, and you can assign anything to it — including things that should never be possible. The class fails to enforce its **invariants** (rules that must always hold, for example "the balance is non-negative").
+The check in `deposit` hasn't gone anywhere — we simply bypassed it: `balance` is a regular attribute, and you can assign anything to it. The class cannot enforce its own rules — for example, "the balance is never negative".
 
-Encapsulation is the idea that an object has a **public interface** (how the outside world talks to it) and **internal state** (which the outside world shouldn't poke). External code calls methods; the class itself watches over its data and keeps it valid.
+Encapsulation is the answer to this problem: an object has a **public interface** (how the outside world talks to it) and **internal state** (which the outside world shouldn't poke). External code calls methods; the class itself makes sure its data stays correct.
 
 ## The single-underscore convention
 
-Python has no `private` keyword. Instead there's a convention: an attribute or method whose name starts with an underscore is considered "internal", meaning don't touch from outside:
+How do you tell internal from public? Python has a convention for that: an attribute or method whose name starts with an underscore is considered "internal" — don't touch it from outside:
 
-```python-executable
+```python
 class BankAccount:
     def __init__(self, balance):
         self._balance = balance   # underscore = "internal"
@@ -40,18 +60,24 @@ account = BankAccount(1000)
 account.deposit(500)
 account.withdraw(2000)        # more than the balance, ignored
 print(account.get_balance())
-# Output: 1500
+<output>
+1500
+</output>
 ```
 
 From the outside only `deposit`, `withdraw`, and `get_balance` are available: everything you need to work with the account. You **technically can** still poke `_balance` from outside (Python doesn't forbid it), but the convention says: don't, otherwise you're bypassing the class's checks.
 
 The Python community states this philosophy as **"we're all consenting adults here"**. The language doesn't forbid — it signals that you shouldn't touch this. Responsibility is on the programmer.
 
+outside code → through methods → `deposit()`, `withdraw()`, `get_balance()`; directly → `_balance`. The account is used through its methods, while `_balance` is changed only by the class itself.
+
 ## Properties: an attribute on the outside, a method on the inside
 
-Often you want `account.balance` to **look** like a regular attribute from the outside, while underneath there's actually a method (for example, with validation). In Java you'd write `getBalance()` and `setBalance()`. In Python there's `@property`:
+Often you want `account.balance` to **look** like a regular attribute from the outside, while underneath there's actually a method with validation. That's what `@property` is for.
 
-```python-executable
+The line with `@` above a method is a **decorator**: a device that changes how the method behaves. Decorators get their own lesson later in the course; for now it's enough to know what these two do:
+
+```python
 class Account:
     def __init__(self, balance):
         self._balance = balance
@@ -70,81 +96,77 @@ account = Account(1000)
 
 # Used like a regular attribute:
 print(account.balance)
-# Output: 1000
+<output>
+1000
+</output>
 
 account.balance = 500   # triggers the setter with validation
 print(account.balance)
-# Output: 500
+<output>
+500
+</output>
 
 # Trying to set a negative value:
 try:
     account.balance = -100
 except ValueError as e:
     print(f"Error: {e}")
-# Output: Error: Balance cannot be negative
+<output>
+Error: Balance cannot be negative
+</output>
 ```
 
-The `@property` decorator turns a method into a "computed attribute". `@balance.setter` defines what happens on assignment. From the outside it all looks like `account.balance = 500`, but inside the class the validation kicks in.
+`@property` turns a method into a "computed attribute": from the outside, `account.balance` is read without parentheses. `@balance.setter` defines what happens on assignment: from the outside it looks like a plain assignment, but inside the class the validation kicks in.
 
-> In Java and C++ people often write `get_x()` and `set_x()` methods. In Python that's not idiomatic: use `@property`.
+The example uses `raise` and `try/except` — that's the error mechanism: `raise` aborts the operation and signals that a value is invalid, while `try/except` catches it in the calling code. They have their own lesson later in the course; here it's enough to see that the check in the setter prevents an invalid value from being stored.
 
 ## Read-only properties
 
 If a `@property` has no setter, the attribute becomes read-only. This is handy for **computed** values that don't make sense to "set" from outside:
 
-```python-executable
+```python
 import math
 
 class Circle:
     def __init__(self, radius):
-        self._radius = radius
-
-    @property
-    def radius(self):
-        return self._radius
-
-    @radius.setter
-    def radius(self, value):
-        if value <= 0:
-            raise ValueError("Radius must be positive")
-        self._radius = value
+        self.radius = radius
 
     @property
     def area(self):
-        return math.pi * self._radius ** 2
+        return math.pi * self.radius ** 2
 
 circle = Circle(5)
-print(f"Radius: {circle.radius}, area: {circle.area:.2f}")
-# Output: Radius: 5, area: 78.54
-
-# Change the radius, the area is recomputed automatically
-circle.radius = 7
-print(f"Radius: {circle.radius}, area: {circle.area:.2f}")
-# Output: Radius: 7, area: 153.94
+print(f"Radius: {circle.radius}, area: {round(circle.area, 2)}")
+<output>
+Radius: 5, area: 78.54
+</output>
 
 # You can't assign to area (there's no setter)
 try:
     circle.area = 100
 except AttributeError as e:
     print(f"Error: {e}")
-# Output: Error: property 'area' of 'Circle' object has no setter
+<output>
+Error: property 'area' of 'Circle' object has no setter
+</output>
 ```
 
-`area` always returns the current value, and you can't assign to it: there shouldn't be a "set the area" operation, since it follows from the radius.
-
-## What about double underscores?
-
-You may sometimes see attributes with two leading underscores: `self.__balance`. That triggers Python's **name mangling**: the attribute is renamed inside the object to `_ClassName__balance`. It's useful in rare cases (for example, to make sure an attribute doesn't collide with a same-named attribute in a subclass) and is almost never seen in regular code. By default, use a single underscore.
+`area` always returns the current value, and you can't assign to it — rightly so: the area isn't stored separately, it follows from the radius.
 
 ## What encapsulation gives you
 
-The main point: the class becomes **responsible for its own data**. From outside, there's no (by convention) way to bypass its checks and leave the object in an invalid state. If later you need to change how the data is stored (say, `_balance` becomes a dict with a transaction history), the outside code doesn't break, because it still talks to the class through the same interface — `deposit`, `withdraw`, `balance`.
+The main point: the class becomes **responsible for its own data**. From outside there's no way (by convention) to bypass its checks and leave the object with incorrect data. If later you need to change how the data is stored (say, `_balance` becomes a dict with a transaction history), the outside code doesn't break, because it still talks to the class through the same public interface — `deposit`, `withdraw`, `balance`.
 
-## What's next?
+## Understanding check
+
+**How do you set up an attribute that can be read from outside but not changed?**
+
+1. **Correct answer:** @property without a setter — From the outside such an attribute reads like a regular one, and Python raises AttributeError when you try to assign to it.
+
+2. A regular attribute without an underscore — A regular attribute can be changed from anywhere in the program — there is no write protection.
+
+3. An attribute with a single underscore — A single underscore is only an "internal, do not touch" signal: technically it can still be changed from outside.
+
+4. A get_x() method and an \_x attribute — Reading would require a method call with parentheses, and \_x itself stays changeable. In Python, @property is used instead.
 
 In the next lesson we'll take on the third principle of OOP — polymorphism: how a single interface can work with objects of different classes, and why that makes code simpler.
-
----
-
-**Which access level is most appropriate for an attribute that should be readable but should not be changed outside the class?**
-

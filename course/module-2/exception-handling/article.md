@@ -1,264 +1,184 @@
+---
+meta:
+    title: "Exception Handling in Python"
+    description: "How to catch errors with try/except, what else and finally are for, and why you should not catch every exception at once."
+---
+
 # Exception Handling in Python
 
-Traveling through unknown territory requires careful preparation — an experienced explorer thinks through possible dangers in advance, checks the map, prepares equipment, and plans the route. In programming, exception handling works in a similar way — it's a reliable tool that allows a program to properly respond to unexpected situations and continue working, instead of crashing at the first error. 🧭
+A program asks the user for their age and adds a year:
 
-## What are exceptions?
+```python
+age = int(input("How old are you? "))
+print("Next year you'll be", age + 1)
+```
 
-> Exceptions are events that disrupt the normal flow of program execution, which can be handled by special language constructs.
+As long as they type a number, everything works. But the moment the user types "forty" instead of `40`, `int()` can't turn it into a number: the program crashes with a `ValueError`, and the `print` line never runs. One bad input takes down the whole program.
 
-## Why do we need exception handling?
+Exception handling is for exactly these moments: catch the error, respond, and keep going, instead of crashing at the first surprise. We've postponed this conversation twice — in the lessons on text files and encapsulation. The time has come.
 
-Exception handling allows you to:
+> An exception is an error that occurs while the program is running. By default it stops the program, but it can be caught and handled.
 
-1. **Prevent program crashes** — your program will continue running even if something goes wrong
-2. **Separate error handling code from the main logic** — makes code more readable and understandable
-3. **Handle different types of errors centrally** — simplifies program structure
-4. **Make your program more robust** — it can work correctly even in unexpected situations
+## The try-except block
 
-## Try-except blocks
-
-The main mechanism for exception handling in Python is the `try-except` block. It allows you to:
-
--   Isolate potentially dangerous code
--   Catch errors
--   Perform alternative actions
--   Continue program execution
-
-### Try-except block syntax
+The risky code goes into `try`, the reaction to the error into `except`:
 
 ```python
 try:
-    # Risky code that might raise an exception
+    # code that might fail
 except ExceptionType:
-    # Code that will execute when the specified exception occurs
+    # what to do if it failed
 ```
 
-Here's a simple example:
+Here's what it looks like with a real error:
 
 ```python
 try:
-    # Code that might raise an exception
-    result = 10 / 0  # Division by zero will raise ZeroDivisionError
+    result = 10 / 0
 except ZeroDivisionError:
-    # Code that will execute when the exception occurs
     print("Error: division by zero!")
+<output>
+Error: division by zero!
+</output>
 ```
 
-### Complete try-except block structure
+The program didn't crash: Python reached the division, saw the error, jumped into `except` and kept going.
 
-The complete structure of a try-except block includes additional sections:
+## Different errors — different reactions
 
-```python
-try:
-    # Risky code
-except ExceptionType1:
-    # Handle exception type 1
-except ExceptionType2:
-    # Handle exception type 2
-else:
-    # Executes if no exceptions occurred in the try block
-finally:
-    # Always executes, regardless of whether exceptions occurred
-```
-
-## Handling different types of exceptions
-
-### Sequential handling of different exceptions
-
-You can handle different types of exceptions differently:
+Different things can fail inside one `try`, and each exception type gets its own `except`. Python checks them in order and runs the first one that matches:
 
 ```python
+file_name = "data.txt"
+
 try:
-    # Several operations that might raise different exceptions
-    file_name = input("Enter file name: ")  # Let's assume "data.txt" was entered
     file = open(file_name, "r")
-    line = file.readline()
-    number = int(line.strip())
-    result = 100 / number
-    print(f"Result: {result}")
+    number = int(file.readline().strip())
+    print(f"Result: {100 / number}")
 except FileNotFoundError:
     print(f"File {file_name} not found")
 except ValueError:
-    print("Cannot convert data to a number")
+    print("The file doesn't contain a number")
 except ZeroDivisionError:
-    print("Error: division by zero")
-except Exception as e:
-    print(f"An unknown error occurred: {e}")
+    print("The file contains zero — can't divide")
+<output>
+File data.txt not found
+</output>
 ```
 
-Important: Python checks the `except` blocks in the order they are declared and executes the first matching block.
-
-### Handling multiple exceptions with one block
-
-If you need the same handling for different exceptions:
+If the reaction to different errors is the same, the types are listed in parentheses, separated by commas:
 
 ```python
 try:
     value = int("abc")
-    result = 10 / 0
 except (ValueError, ZeroDivisionError):
-    print("A calculation error occurred")
+    print("An error occurred in the calculations")
+<output>
+An error occurred in the calculations
+</output>
 ```
 
-## Else and finally blocks
+## The else and finally blocks
 
-### Else block
-
-The `else` block executes only if no exceptions were raised in the `try` block:
+`else` runs only if there were no errors in `try`:
 
 ```python
 try:
-    number = int("42")  # This will execute successfully
+    number = int("42")
 except ValueError:
-    print("This is not a number")
+    print("That's not a number")
 else:
-    # This block will execute since no exception occurred
-    print(f"Success! Number: {number}")
-    print(f"Square of the number: {number ** 2}")
+    print(f"Success! The number: {number}")
+<output>
+Success! The number: 42
+</output>
 ```
 
-The `else` block is useful when you need to execute code only after a risky operation has completed successfully.
-
-### Finally block
-
-The `finally` block always executes, regardless of whether an exception occurred or not:
+`finally` runs always — error or no error:
 
 ```python
+f = open("example.txt", "w")
 try:
-    f = open("example.txt", "w")
     f.write("Hello, world!")
-    # Let's assume an exception might occur here
-except IOError:
-    print("An I/O error occurred")
 finally:
-    print("Closing file")
-    f.close()  # The file will be closed in any case
+    f.close()   # runs even if the write above fails
+    print("File closed")
+<output>
+File closed
+</output>
 ```
 
-The `finally` block is typically used for:
+Notice that `open()` sits before `try`. Put it inside, and if the file fails to open, the variable `f` simply won't exist — and `f.close()` in `finally` will fail on its own. This is exactly the chore that the `with` statement from the files chapter automates: it closes the file for you.
 
--   Releasing resources (closing files, database connections)
--   Cleaning up temporary data
--   Logging the completion of an operation
+`finally` is for whatever must happen no matter what — most often releasing resources like open files.
 
-## Getting information about an exception
+## Information about the error: as
 
-Use `as` to get the exception object:
+With `as` you can get the exception object itself — for example, to show its message:
 
 ```python
 try:
     result = 10 / 0
 except ZeroDivisionError as e:
-    print(f"Exception type: {type(e).__name__}")
     print(f"Message: {e}")
+<output>
+Message: division by zero
+</output>
 ```
 
-## Raising exceptions
+## Your own errors: raise
 
-You can raise exceptions yourself using the `raise` statement:
+The `raise` statement raises an exception manually. You've already seen it in the encapsulation lesson: the setter refused to store a negative balance. Here's how it works:
 
 ```python
 def check_age(age):
     if age < 0:
         raise ValueError("Age cannot be negative")
-    if age < 18:
-        print("You are a minor")
-    else:
-        print("You are an adult")
+    print(f"Age {age} accepted")
 
 try:
     check_age(-5)
 except ValueError as e:
     print(f"Error: {e}")
+<output>
+Error: Age cannot be negative
+</output>
 ```
 
-## Creating custom exceptions
+## Don't catch everything at once
 
-You can create your own exception classes by inheriting from standard ones:
-
-```python
-# Creating a custom exception class
-class InvalidEmailError(Exception):
-    """Raised when an email doesn't match the format"""
-    pass
-
-def validate_email(email):
-    if "@" not in email:
-        raise InvalidEmailError("Email must contain the @ symbol")
-    print(f"Email {email} is valid")
-
-try:
-    validate_email("user.example.com")
-except InvalidEmailError as e:
-    print(f"Validation error: {e}")
-```
-
-## Practical recommendations
-
-### 1. Specify concrete exceptions
+A bare `except:` with no type catches any error — including ones you never suspected, like a typo in a variable name. The program "works" while the real problem stays silent:
 
 ```python
-# Bad:
+# Bad: no idea what actually happened
 try:
     number = int("abc")
-except:  # Catches all exceptions
-    print("Error")
+except:
+    print("Some error")
+<output>
+Some error
+</output>
 
-# Good:
+# Good: catch exactly what you expect
 try:
     number = int("abc")
 except ValueError:
     print("Invalid number format")
-```
-
-### 2. Minimize code in the try block
-
-```python
-# Good:
-try:
-    file = open("data.txt", "r")
-except FileNotFoundError:
-    print("File not found")
-    file = None
-
-if file:
-    try:
-        content = file.read()
-    except:
-        print("Error reading file")
-    finally:
-        file.close()
-```
-
-### 3. Use else and finally correctly
-
-```python
-def get_value_from_list(my_list, index):
-    try:
-        value = my_list[index]
-    except IndexError:
-        print(f"Index {index} out of range")
-        return None
-    else:
-        # This code executes only if no exception occurred
-        print(f"Value successfully retrieved")
-        return value
-    finally:
-        # This code always executes
-        print("List access operation completed")
-
-result = get_value_from_list([1, 2, 3], 1)
-print(f"Result: {result}")
-
-result = get_value_from_list([1, 2, 3], 10)
-print(f"Result: {result}")
+<output>
+Invalid number format
+</output>
 ```
 
 ## Understanding check
 
-**Which block always executes, regardless of whether an exception occurred or not?**
+**Which block always runs, whether an exception occurred or not?**
 
+1. try — The try block contains code that may raise an exception, but it does not guarantee that all the code inside runs if an exception occurs.
 
-## Conclusion
+2. except — The except block runs only when an exception of the matching type occurs.
 
-Exception handling is your reliable protector against chaos in code. It turns potential disasters into controlled situations, allowing your programs to elegantly handle unexpected events. By properly using try-except, else, and finally, you create more reliable and robust code. 🛡️
+3. else — The else block runs only if no exception occurred in the try block.
+
+4. **Correct answer:** finally — The finally block always runs, exception or not. That is why it holds resource cleanup: closing files and database connections — things that must happen in any case.
+
+In the next lesson — decorators. You've already met them twice: `@property` in encapsulation and `@abstractmethod` in polymorphism. It's time to see how the line with `@` works on the inside.
