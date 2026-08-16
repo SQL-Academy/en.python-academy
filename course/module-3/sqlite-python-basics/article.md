@@ -1,16 +1,24 @@
-# SQLite in Python: relational database basics
+---
+meta:
+    title: "SQLite: Your First Database in Python"
+    description: "Connecting to SQLite from Python, creating a table, the four CRUD operations, and SQL injection protection with parameters."
+---
 
-Most production apps store data in **relational databases** — PostgreSQL, MySQL, SQLite — not in files. Sooner or later you'll write SQL queries from Python and read results back into your code.
+# SQLite: Your First Database in Python
 
-In this article we'll walk through the basic pattern using **SQLite**: a full-featured relational database built into Python. No installation needed, the database lives in a single file, and the same approach carries over to any other RDBMS.
+Your phone's messages, your browser's history, the settings of half the apps on your laptop — a huge share of them live in **SQLite**: a serverless relational database built right into Python. Nothing to install, the whole database is a single file, and the same approach later carries over to any other RDBMS.
 
-This article gives a **general overview** of working with SQL from Python. For a deep dive into SQL itself, see the [free SQL Academy course](https://sql-academy.org/en/guide) with practical exercises.
+SQLite is where we'll learn the basic pattern for working with a relational database: how to send a SQL query from Python and read the rows back into code.
 
 ## Connection and cursor
 
-Python's standard library includes the `sqlite3` module. Basic pattern: open a connection, get a `cursor` (which runs queries), close the connection.
+Python's standard library includes the `sqlite3` module. The basic pattern is three steps:
 
-```python-executable
+- open a **connection** — an opened database, like a file after `open()`;
+- get a **cursor** — it sends queries into the database and holds the latest result;
+- close the connection at the end.
+
+```python
 import sqlite3
 
 # Connect to the database (the file is created automatically)
@@ -21,61 +29,60 @@ cursor = connection.cursor()
 
 connection.close()
 print("Done")
-# Output: Done
+<output>
+Done
+</output>
 ```
 
-It's nicer to use the connection as a context manager (`with`) — it closes itself and commits changes on exit:
-
-```python-executable
-import sqlite3
-
-with sqlite3.connect('tasks.db') as connection:
-    cursor = connection.cursor()
-    # ... queries
-
-print("Done")
-# Output: Done
-```
+`Python code` → SQL query → `tasks.db` → rows as tuples → `Python code`
 
 ## Creating a table
 
-In a relational database, data lives in **tables**. Each table has a schema: which columns, what types, what constraints. You create one with the SQL `CREATE TABLE` command:
+In a relational database, data lives in **tables**. Every table is described by a schema: which columns, of which types, with which constraints. We create one with the SQL command `CREATE TABLE`.
 
-```python-executable
+From here on, every example wraps the connection in `with`: SQLite doesn't write changes instantly: they have to be confirmed (committed), and `with` does that itself on leaving the block, rolling back on error. It doesn't close the connection, though, but in short scripts like the ones below it closes together with the program; in long-running code call `close()`, as in the first example.
+
+```python
 import sqlite3
 
 with sqlite3.connect('tasks.db') as connection:
     cursor = connection.cursor()
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS tasks (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id INTEGER PRIMARY KEY,
             title TEXT NOT NULL,
             completed BOOLEAN DEFAULT FALSE
         )
     ''')
 
-print("Table tasks ready")
-# Output: Table tasks ready
+print("Table tasks is ready")
+<output>
+Table tasks is ready
+</output>
 ```
 
 What the SQL parts mean:
 
--   `CREATE TABLE IF NOT EXISTS tasks` — create table `tasks` if it doesn't exist yet
--   `id INTEGER PRIMARY KEY AUTOINCREMENT` — integer primary key, auto-incremented
--   `title TEXT NOT NULL` — text field, required
--   `completed BOOLEAN DEFAULT FALSE` — boolean field, defaults to `False`
+- `CREATE TABLE IF NOT EXISTS tasks` — create the `tasks` table if it doesn't exist yet
+- `id INTEGER PRIMARY KEY` — an integer primary key; SQLite numbers new rows itself
+- `title TEXT NOT NULL` — a text field, required
+- `completed BOOLEAN DEFAULT FALSE` — a boolean field, `False` by default
 
 ## CRUD: the four basic operations
 
-CRUD stands for **C**reate / **R**ead / **U**pdate / **D**elete: the four operations that cover almost all data work. Going forward we'll assume `tasks` table is already created.
+CRUD is an acronym for **C**reate / **R**ead / **U**pdate / **D**elete: four operations that cover almost all work with data.
 
-### CREATE: inserting data
+We practice on an in-memory database: `:memory:` instead of a file name gives a clean database on every run. The first lines inside `with` are the setup: a table and two tasks.
 
-```python-executable
+### CREATE: adding data
+
+```python
 import sqlite3
 
-with sqlite3.connect('tasks.db') as connection:
+with sqlite3.connect(':memory:') as connection:
     cursor = connection.cursor()
+    cursor.execute("CREATE TABLE tasks (id INTEGER PRIMARY KEY, title TEXT)")
+
     cursor.execute(
         "INSERT INTO tasks (title) VALUES (?)",
         ("Learn SQLite",)
@@ -86,105 +93,121 @@ with sqlite3.connect('tasks.db') as connection:
     )
 
 print("Tasks added")
-# Output: Tasks added
+<output>
+Tasks added
+</output>
 ```
 
-A crucial point: values are **never embedded directly in the SQL string** via f-strings or concatenation. Instead, use the `?` placeholder and pass the value as the second argument to `execute`. This guards against **SQL injection**:
+The values travel as a tuple in the second argument of `execute`, and the SQL itself holds a `?` parameter in their place. The comma in `("Learn SQLite",)` is required: it is what makes the parentheses a one-element tuple. Why values are never glued straight into the query string — we'll show right after we learn to read data.
+
+### READ: reading data
 
 ```python
-# UNSAFE: user input concatenated into SQL
-user_input = "'; DROP TABLE tasks; --"
-cursor.execute(f"INSERT INTO tasks (title) VALUES ('{user_input}')")
-# becomes: INSERT ... VALUES (''); DROP TABLE tasks; --')
-
-# SAFE: value passed separately
-cursor.execute("INSERT INTO tasks (title) VALUES (?)", (user_input,))
-# becomes: INSERT ... VALUES ('\'; DROP TABLE tasks; --')
-```
-
-Rule: **never concatenate user input into a SQL string**, always pass it through `?` parameters.
-
-### READ: querying data
-
-```python-executable
 import sqlite3
 
-with sqlite3.connect('tasks.db') as connection:
+with sqlite3.connect(':memory:') as connection:
     cursor = connection.cursor()
-    cursor.execute("SELECT id, title, completed FROM tasks")
+    cursor.execute("CREATE TABLE tasks (id INTEGER PRIMARY KEY, title TEXT)")
+    cursor.execute("INSERT INTO tasks (title) VALUES ('Learn SQLite'), ('Buy groceries')")
+
+    cursor.execute("SELECT id, title FROM tasks")
     rows = cursor.fetchall()
 
 for row in rows:
     print(row)
-# Output:
-# (1, 'Learn SQLite', 0)
-# (2, 'Buy groceries', 0)
+<output>
+(1, 'Learn SQLite')
+(2, 'Buy groceries')
+</output>
 ```
 
-`cursor.fetchall()` returns all rows as a list of tuples. Access fields by index: `row[0]` is `id`, `row[1]` is `title`, etc.
+`cursor.fetchall()` returns all result rows as a list of tuples: fields are accessed by index, `row[0]` is `id`, `row[1]` is `title`.
 
-For a single row (say by id), use `fetchone()`:
+When you need just one row, use `fetchone()` instead: it returns the first row of the result. We'll see it in action just below.
 
-```python-executable
-import sqlite3
+### SQL injection: why `?`
 
-with sqlite3.connect('tasks.db') as connection:
-    cursor = connection.cursor()
-    cursor.execute("SELECT title FROM tasks WHERE id = ?", (1,))
-    row = cursor.fetchone()
+Now we can show what the `?` parameter is really for. Imagine a search field where the user types a task title — and an attacker types a piece of SQL:
 
-print(row)
-# Output: ('Learn SQLite',)
+```python
+# DANGEROUS: user input is glued into the SQL
+search = "' OR '1'='1"
+cursor.execute(f"SELECT * FROM tasks WHERE title = '{search}'")
+# The SQL becomes: SELECT * FROM tasks WHERE title = '' OR '1'='1'
+# '1'='1' is always true → ALL tasks come back, not just the right one
+
+# SAFE: the value travels separately
+cursor.execute("SELECT * FROM tasks WHERE title = ?", (search,))
+# looks for a task literally titled "' OR '1'='1" — nothing extra comes back
 ```
+
+The asterisk in `SELECT *` means "all columns at once". The attacker put a piece of SQL into an ordinary search field and got every row of the table; the same trick bypasses password checks or deletes data. The rule: **never glue user input into a SQL string**, always pass parameters through `?`.
 
 ### UPDATE: changing data
 
-```python-executable
+```python
 import sqlite3
 
-with sqlite3.connect('tasks.db') as connection:
+with sqlite3.connect(':memory:') as connection:
     cursor = connection.cursor()
+    cursor.execute("CREATE TABLE tasks (id INTEGER PRIMARY KEY, title TEXT, completed BOOLEAN DEFAULT FALSE)")
+    cursor.execute("INSERT INTO tasks (title) VALUES ('Learn SQLite'), ('Buy groceries')")
+
     cursor.execute(
         "UPDATE tasks SET completed = ? WHERE id = ?",
         (True, 1)
     )
 
-print("Task 1 marked completed")
-# Output: Task 1 marked completed
+    cursor.execute("SELECT id, title, completed FROM tasks WHERE id = ?", (1,))
+    print(cursor.fetchone())
+<output>
+(1, 'Learn SQLite', 1)
+</output>
 ```
 
-`WHERE id = ?` is essential: without a condition, `UPDATE` updates **every** row in the table.
+The first task is now done: SQLite stores boolean values as `0` and `1`, and `completed` flipped from zero to one. And `WHERE id = ?` is essential: without a condition, `UPDATE` changes **every** row in the table.
 
 ### DELETE: removing data
 
-```python-executable
+```python
 import sqlite3
 
-with sqlite3.connect('tasks.db') as connection:
+with sqlite3.connect(':memory:') as connection:
     cursor = connection.cursor()
+    cursor.execute("CREATE TABLE tasks (id INTEGER PRIMARY KEY, title TEXT)")
+    cursor.execute("INSERT INTO tasks (title) VALUES ('Learn SQLite'), ('Buy groceries')")
+
     cursor.execute("DELETE FROM tasks WHERE id = ?", (2,))
 
-print("Task 2 deleted")
-# Output: Task 2 deleted
+    cursor.execute("SELECT id, title FROM tasks")
+    print(cursor.fetchall())
+<output>
+[(1, 'Learn SQLite')]
+</output>
 ```
 
-Same warning: without a `WHERE`, `DELETE` empties **the whole table**.
+The second task is gone — one row remains. Same story as with `UPDATE`: without `WHERE`, the `DELETE` command removes **every** row in the table.
 
-## What's beyond this article
+## What we left out
 
-There are several production topics we're not covering in depth here but you should know they exist:
+Real production code involves a few important topics we don't cover in detail here, but you should know they exist:
 
--   **Transactions** (`BEGIN`/`COMMIT`/`ROLLBACK`): a group of changes runs atomically, all or none. The `with sqlite3.connect(...)` block commits automatically on exit.
--   **Relationships** (`FOREIGN KEY`, `JOIN`): most real schemas have multiple linked tables (users and their tasks, orders and items).
--   **Indexes**: speed up lookups on frequently queried columns.
+- **Transactions** (`BEGIN`/`COMMIT`/`ROLLBACK`): a group of changes runs atomically — all or nothing. `with sqlite3.connect(...)` commits automatically on leaving the block.
+- **JOINs and multi-table queries**: most real schemas have several linked tables (users and their tasks, orders and products), and the data is pulled from them with a single query.
+- **Indexes**: speed up searches on frequently used columns.
 
-These are covered in the [SQL Academy course](https://sql-academy.org/en/guide).
+These topics are covered by the [SQL Academy course](https://sql-academy.org/en/guide).
 
-## What's next?
+## Understanding check
 
-The next article covers **SQLAlchemy Core**: a library that builds SQL queries from Python expressions instead of strings. SQL injections are handled automatically, and the same code works across PostgreSQL, MySQL, and SQLite.
+**Why should values go into `execute()` through the `?` parameter rather than directly into the SQL string?**
 
----
+1. **Correct answer:** To protect against SQL injection — The query text and the values travel to the database through different channels: the query is parsed first, and the placeholder is a slot for a value. Whatever lands in the slot can no longer be read as SQL, so hostile input stays a plain string in a field, not a command.
 
-**Why pass values to `execute()` through the `?` parameter instead of embedding them in the SQL string?**
+2. To make the query run faster — There is a speed effect (the DB may cache the query plan), but it is a side benefit. The main reason is safety.
 
+3. So SQLite can convert the types automatically — Type conversion happens either way. The main reason for parameterized queries is protection against SQL injection.
+
+4. It is required by the SQL standard — The «?» placeholder is a feature of the sqlite3 driver, not of the SQL standard. Other DBMSs use other placeholders (%s, :name). The main reason to use them is safety.
+
+In the next article we take on **SQLAlchemy Core**: a library that builds SQL queries from Python expressions instead of strings. SQL injection is prevented automatically, and the same code runs on PostgreSQL, MySQL and SQLite.

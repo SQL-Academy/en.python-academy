@@ -1,36 +1,108 @@
+---
+meta:
+    title: "Classes and Objects"
+    description: "Building your first class step by step: __init__, self and methods. Then deeper: how self works, object mutability and dynamic attributes."
+---
+
 # Classes and Objects
 
-In the previous lesson we covered the basics: a class is a template, an object is a filled-in instance, and methods take `self` as their first parameter. In this article we'll go deeper on three topics: how `self` **actually** works under the hood, the fact that objects in Python are **mutable**, and why you can add attributes **on the fly** (and why you usually shouldn't).
+In the previous chapter we looked at a class from a distance: the shape, the template, the objects. Now let's build such a class ourselves, line by line.
 
-## How self works
+## Building a class step by step
 
-When you write `person.greet()`, Python internally turns this into `Person.greet(person)`. The object on the left of the dot automatically becomes the first argument of the method — that's the `self` you see in the method signature.
+The shortest possible class in Python looks like this:
 
-Through `self`, the method sees its own data:
+```python
+class Person:
+    pass
 
-```python-executable
+person = Person()
+print(type(person))
+<output>
+<class '__main__.Person'>
+</output>
+```
+
+`class Person:` declares the class, and `Person()` creates an object from it. An empty one, though: there is no data inside yet.
+
+The data is set up in `__init__`, a special method that Python calls itself on every `Person(...)`. The call's arguments land in its parameters:
+
+```python
+class Person:
+    def __init__(self, name, age):
+        self.name = name
+        self.age = age
+
+person = Person("Anna", 25)
+print(person.name)
+<output>
+Anna
+</output>
+print(person.age)
+<output>
+25
+</output>
+```
+
+The line `self.name = name` reads: "take the parameter `name` and store it in the object under the name `name`". On the left is the object's attribute, on the right the method's parameter.
+
+This is the template-filling from the diagram in the previous chapter: the call `Person("Anna", 25)` filled in the blanks.
+
+The data is there, so let's add the action. A method is declared like an ordinary function, only inside the class, and it always takes `self` as its first parameter:
+
+```python
 class Person:
     def __init__(self, name, age):
         self.name = name
         self.age = age
 
     def greet(self):
-        return f"Hi, my name is {self.name}, I'm {self.age} years old."
+        return f"Hi, my name is {self.name}, I am {self.age} years old."
+
+person = Person("Anna", 25)
+print(person.greet())
+<output>
+Hi, my name is Anna, I am 25 years old.
+</output>
+```
+
+Spotted the oddity? `def greet(self)` declares a parameter, yet `person.greet()` passes nothing. So where does `self` come from?
+
+## How self works
+
+The `greet` method is written in the class once, while there can be any number of objects. So on a call the method somehow needs to know **whose** `name` to print. That's the dot's job: Python executes the call `person.greet()` as `Person.greet(person)` — the object to the left of the dot becomes the first argument itself. That is what arrives in the `self` parameter.
+
+`person.greet()` — Python executes as → `Person.greet(person)`; the object to the left of the dot becomes the first argument and arrives in `self`.
+
+Let's check that this is literally true:
+
+```python
+class Person:
+    def __init__(self, name, age):
+        self.name = name
+        self.age = age
+
+    def greet(self):
+        return f"Hi, my name is {self.name}, I am {self.age} years old."
 
 person = Person("Anna", 25)
 
 # These two calls do the same thing:
 print(person.greet())
-# Output: Hi, my name is Anna, I'm 25 years old.
+<output>
+Hi, my name is Anna, I am 25 years old.
+</output>
 print(Person.greet(person))
-# Output: Hi, my name is Anna, I'm 25 years old.
+<output>
+Hi, my name is Anna, I am 25 years old.
+</output>
 ```
 
-`self` isn't a keyword or magic. It's just the conventional name for a method's first parameter. Technically you can call it whatever you want (`def greet(this):` works too), but the Python community expects `self` and linters will complain about other names.
+Since `self` is an ordinary first parameter, it could have any name: `def greet(this):` works too. But the whole Python community writes `self`, and linters complain about anything else.
 
-Through `self`, methods can call other methods on the same object:
+Through `self`, methods can call other methods of the same object:
 
-```python-executable
+```python
 class Person:
     def __init__(self, name, age):
         self.name = name
@@ -40,19 +112,21 @@ class Person:
         return self.age >= 18
 
     def describe(self):
-        status = "an adult" if self.is_adult() else "a minor"
+        status = "adult" if self.is_adult() else "minor"
         return f"{self.name}: {status}"
 
 person = Person("Anna", 25)
 print(person.describe())
-# Output: Anna: an adult
+<output>
+Anna: adult
+</output>
 ```
 
 ## Objects in Python are mutable
 
-After an object is created, its state can change: by calling methods that modify attributes, or by assigning to attributes directly.
+So far the methods have only read the data: `is_adult` looked at `self.age` and changed nothing. But an object's state can also be changed: with a method, like `add_grade` below, or by assigning to an attribute directly.
 
-```python-executable
+```python
 class Student:
     def __init__(self, name):
         self.name = name
@@ -65,67 +139,86 @@ class Student:
     def average_grade(self):
         if not self.grades:
             return "No grades"
-        return sum(self.grades) / len(self.grades)
+        return round(sum(self.grades) / len(self.grades), 1)
 
 student = Student("Maria")
-print(f"Average: {student.average_grade()}")
-# Output: Average: No grades
+print(f"Average grade: {student.average_grade()}")
+<output>
+Average grade: No grades
+</output>
 
 print(student.add_grade(5))
-# Output: Grade added: 5
+<output>
+Grade added: 5
+</output>
 print(student.add_grade(4))
-# Output: Grade added: 4
+<output>
+Grade added: 4
+</output>
 print(student.add_grade(5))
-# Output: Grade added: 5
+<output>
+Grade added: 5
+</output>
 
-print(f"Average: {student.average_grade()}")
-# Output: Average: 4.666666666666667
+print(f"Average grade: {student.average_grade()}")
+<output>
+Average grade: 4.7
+</output>
 ```
 
-The `add_grade` method modifies `self.grades` — the list stored in the object. Changes happen **in place**: the next call to `student.average_grade()` sees the updated state. It's not "return a new list", it's "modify the existing one".
+The `add_grade` method changes `self.grades`, the list stored in the object. The changes happen **in place**: the next `student.average_grade()` call sees the updated state. It's not "return a new list", it's "change the existing one".
 
 ## Dynamic attributes
 
-In Python, you can add **any** attribute to an object at any time, even one that wasn't declared in `__init__`:
-
-```python-executable
-class Student:
-    def __init__(self, name):
-        self.name = name
-
-student = Student("Maria")
-student.age = 19              # added a new attribute on the fly
-student.favorite_color = "blue"
-
-print(student.age)
-# Output: 19
-print(student.favorite_color)
-# Output: blue
-```
-
-Technically this works, but in real code you almost never do this. A few reasons:
-
--   **The object's state becomes unpredictable.** Looking at the `Student` class, you can't tell what attributes an object actually has.
--   **IDE and linter autocomplete won't help**: they only know what's declared in `__init__`.
--   **A typo creates a new attribute instead of raising an error.** If you write `student.aeg = 19` instead of `student.age = 19`, Python silently creates a new `aeg` field, and the bug is hard to spot.
-
-The rule of thumb: declare all attributes in `__init__`, even with `None` if they'll be filled in later:
+Changing existing attributes is business as usual. Python allows more: you can add **any** new attribute to an object at any moment, even one not declared in `__init__`. Let's check on a slimmed-down `Student` that has only a name:
 
 ```python
 class Student:
     def __init__(self, name):
         self.name = name
-        self.age = None       # will be filled in later
+
+student = Student("Maria")
+student.age = 19            # added a new attribute on the fly
+student.favorite_color = "blue"
+
+print(student.age)
+<output>
+19
+</output>
+print(student.favorite_color)
+<output>
+blue
+</output>
+```
+
+Technically this works, but real code almost never does it, and here is why:
+
+- **The object's state becomes unpredictable.** Looking at the `Student` class, you can't tell which attributes an object actually has.
+- **IDEs and linters can't help** with autocompletion: they only know what's declared in `__init__`.
+- **A typo silently creates a new attribute** instead of a clear error. Write `student.aeg = 19` instead of `student.age = 19`, and Python quietly creates a new `aeg` field — a hard bug to find.
+
+So declare all of an object's attributes in `__init__` — even with a `None` value if they get filled in later:
+
+```python
+class Student:
+    def __init__(self, name):
+        self.name = name
+        self.age = None      # will be filled in later
         self.grades = []
 ```
 
-That way the class honestly describes what fields an object has, and typos immediately become `AttributeError`.
+That way the class honestly describes which fields an object has, and typos immediately turn into an `AttributeError`.
 
-## What's next?
+## Understanding check
 
-In the next lesson we'll go deeper into attributes: the difference between instance and class attributes, and the classic mutable-default gotcha in `__init__`.
+**What happens when `Person.greet(person)` runs, if `greet` is defined with `self` as the first parameter?**
 
----
+1. An error: you can't call a method through the class name. — Calling a method through the class name is allowed. You just pass the object as the first argument yourself.
 
-**What happens when you call `Person.greet(person)` if `greet` is defined with `self` as its first parameter?**
+2. **Correct answer:** The same as person.greet() — person becomes self. — Python executes person.greet() as Person.greet(person): the object to the left of the dot is passed as the first argument itself and arrives in self.
 
+3. The method runs, but self is None. — self receives exactly what was passed as the first argument — in this case the person object.
+
+4. A new Person object is created. — Objects are created only through Person() (the constructor call), not through a method call.
+
+In the next article we'll look at attributes in detail: how instance attributes differ from class attributes, and how to avoid the classic trap with mutable default values in `__init__`.

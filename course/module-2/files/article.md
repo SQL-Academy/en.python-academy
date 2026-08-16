@@ -1,22 +1,12 @@
+---
+meta:
+    title: "Working with Files in Python"
+    description: "How to open, read, write, and close files in Python. Basic concepts and methods for working with the file system."
+---
+
 # Working with Files in Python
 
-Now we'll cover one of the most fundamental capabilities in programming — working
-with files.
-The ability to correctly read data from files and write it back
-will be useful in virtually any project. 📁
-
-Files are containers for storing data on disk.
-Python provides powerful and convenient tools for working with them. Let's figure out how to use these tools!
-
-## Basic File Operations
-
-In Python, working with files usually includes the following steps:
-
-1. **Opening a file** — specify the file and the mode of working with it
-2. **Reading or writing** — perform the necessary operations with the file
-3. **Closing the file** — free up system resources
-
-Let's consider each of these steps in more detail.
+Any variable lives only while the program is running: close it, and your to-do list, the score you racked up, your saved settings are gone. To make data survive a restart, you write it to a file on disk and read it back next time. That's what notes, game saves, report exports (almost any application) rest on.
 
 ## Opening Files
 
@@ -25,94 +15,159 @@ It takes at least two parameters: the path to the file and the opening mode.
 
 > The `open(file, mode)` function returns a file object that can be used for reading, writing, or other operations with the file.
 
-Here are the basic file opening modes:
+The mode is a short string that answers "what are we going to do with this file". You pick one of three:
 
-| Mode  | Description                                                |
-| ----- | ---------------------------------------------------------- |
-| `'r'` | Reading (default mode)                                     |
-| `'w'` | Writing (creates a new file or overwrites an existing one) |
-| `'a'` | Appending — adds data to the end of the file               |
-| `'b'` | Binary mode (e.g., `'rb'` for reading a binary file)       |
-| `'t'` | Text mode (default mode)                                   |
-| `'+'` | Updating (reading and writing)                             |
+| Letter | What it does                                                |
+| ------ | ----------------------------------------------------------- |
+| `'r'`  | read; the file must already exist (the default mode)        |
+| `'w'`  | write from scratch: creates the file, wipes an existing one |
+| `'a'`  | append to the end; the old contents stay where they are     |
 
-Examples of opening files in different modes:
+Let's see the two most common modes in action:
 
 ```python
-# Opening a file for reading (default mode - 'r')
-file = open('example.txt', 'r')
-print(f"File opened in mode: {file.mode}")
+# 'w' creates the file (or overwrites it) and opens it for writing
+file = open('notes.txt', 'w')
+file.write("Buy milk")
 file.close()
 
-# Opening a file for writing
-file = open('new_file.txt', 'w')
-print(f"File opened in mode: {file.mode}")
-file.close()
-
-# Opening a binary file for reading
-file = open('image.jpg', 'rb')
-print(f"File opened in mode: {file.mode}")
+# 'r' opens an existing file for reading
+file = open('notes.txt', 'r')
+print(file.read())
+<output>
+Buy milk
+</output>
 file.close()
 ```
 
+`'w'` deserves a separate warning: it wipes the old contents silently, with no confirmation. Open a file full of important data with `'w'` instead of `'a'`, and the data is gone. `'r'` is the opposite: it requires the file to already exist, and if it doesn't, Python stops the program with a `FileNotFoundError`.
+
+## The with Context Manager
+
+In the example above, `close()` was called after the work with the file was done. Let's see why that call is needed and why real code almost never writes it.
+
+An open file has to be closed: while it's open it holds system resources, and written data may not reach the disk until it's closed. You can close it manually:
+
+```python
+file = open('example.txt', 'w')
+file.write("Example text")
+file.close()
+```
+
+The catch is that it's easy to forget `close()`. And if something goes wrong between opening and closing and the program is interrupted, `close()` is never reached, and the file stays open.
+
+The `with` construct takes this off your hands: it closes the file when the block ends, no matter the outcome.
+
+```python
+with open('example.txt', 'w') as file:
+    file.write("Example text")
+# the file is already closed here automatically
+print("File automatically closed after the with block")
+<output>
+File automatically closed after the with block
+</output>
+```
+
+> The `with` context manager guarantees the file is closed even if an error occurs inside the block. It's the standard way to work with files in Python, and it's what we use from here on.
+
 ## Reading from a File
 
-After opening a file, its contents can be read in several ways:
+After opening a file, its contents can be read in several ways.
+
+In all the examples below, a `sample.txt` file with three lines sits next to the program.
 
 ### Reading the entire file
 
-```python
-# Let's create a test file
-with open('sample.txt', 'w') as f:
-    f.write("First line\nSecond line\nThird line")
+**sample.txt**
 
-# Reading the entire file at once
+```text
+First line
+Second line
+Third line
+```
+
+**main.py**
+
+```python
 with open('sample.txt', 'r') as file:
     content = file.read()
-    print("File contents:")
-    print(content)
+
+print(content)
+
+```
+
+Run `main.py`, and the output is:
+
+```text
+First line
+Second line
+Third line
 ```
 
 ### Reading a file line by line
 
-```python
-# Reading a file line by line using a loop
-with open('sample.txt', 'r') as file:
-    print("Reading line by line:")
-    for line in file:
-        print(f"  Line: {line.strip()}")
+**sample.txt**
+
+```text
+First line
+Second line
+Third line
 ```
 
-### Reading a specific number of characters
+**main.py**
 
 ```python
-# Reading a specific number of characters
 with open('sample.txt', 'r') as file:
-    first_10_chars = file.read(10)
-    print(f"First 10 characters: {first_10_chars}")
+    for line in file:
+        print(f"Line: {line.strip()}")
 
-    # Reading the next 10 characters
-    next_10_chars = file.read(10)
-    print(f"Next 10 characters: {next_10_chars}")
+```
+
+Run `main.py`, and the output is:
+
+```text
+Line: First line
+Line: Second line
+Line: Third line
 ```
 
 ### Reading all lines into a list
 
+`for line in file` takes lines one at a time and never holds the whole file in memory. That's the default choice, especially for large files. But sometimes you need all the lines at once: to count them, to reach the fifth one, to sort them. That's what `readlines()` is for; it returns an ordinary list:
+
+**sample.txt**
+
+```text
+First line
+Second line
+Third line
+```
+
+**main.py**
+
 ```python
-# Reading all lines into a list
 with open('sample.txt', 'r') as file:
     lines = file.readlines()
-    print(f"List of lines: {lines}")
+
+print(lines)
+
 ```
+
+Run `main.py`, and the output is:
+
+```text
+['First line\n', 'Second line\n', 'Third line']
+```
+
+Notice the `\n` at the end of each element: `readlines()` cuts the file at the line breaks but doesn't throw them away. That's why `line.strip()` showed up in the example above: `print` adds its own line break on top of the one that came from the file, and without `strip()` you'd get blank lines in between.
 
 ## Writing to a File
 
-Writing data to a file can also be done in different ways:
+There are several ways to write data to a file:
 
 ### Writing a string
 
 ```python
-# Writing a string to a file
 with open('output.txt', 'w') as file:
     file.write("Hello, world!\n")
     file.write("Python is a great programming language.")
@@ -121,7 +176,14 @@ with open('output.txt', 'w') as file:
 with open('output.txt', 'r') as file:
     content = file.read()
     print("File contents after writing:")
+<output>
+File contents after writing:
+</output>
     print(content)
+<output>
+Hello, world!
+Python is a great programming language.
+</output>
 ```
 
 ### Writing multiple lines
@@ -134,70 +196,58 @@ with open('lines.txt', 'w') as file:
     for line in lines:
         file.write(line + '\n')
 
-# Alternative way: using writelines()
-with open('lines2.txt', 'w') as file:
-    # Don't forget to add newline characters
-    file.writelines([line + '\n' for line in lines])
-
-# Let's check the second file
-with open('lines2.txt', 'r') as file:
+# Let's check what was written
+with open('lines.txt', 'r') as file:
     content = file.read()
-    print("Contents of lines2.txt:")
+    print("Contents of lines.txt:")
+<output>
+Contents of lines.txt:
+</output>
     print(content)
+<output>
+First line
+Second line
+Third line
+
+</output>
 ```
 
 ### Appending data to the end of a file
 
+Next to the program sits `output.txt` with two lines — the `'a'` mode will append to its end without erasing anything:
+
+**output.txt**
+
+```text
+Hello, world!
+Python is a great programming language.
+```
+
+**main.py**
+
 ```python
-# Appending data to the end of a file (mode 'a')
 with open('output.txt', 'a') as file:
-    file.write("\nThis line was added later.")
+    file.write("
+This line was added later.")
 
-# Let's check the result
 with open('output.txt', 'r') as file:
-    content = file.read()
-    print("File contents after appending:")
-    print(content)
+    print(file.read())
+
 ```
 
-## The with Context Manager
+Run `main.py`, and the output is:
 
-You might have noticed that in all the examples above, we used the `with open(...) as file:` construct.
-This is a context manager that automatically closes the file after finishing working
-with it.
-
-> The `with` context manager is a safe way to work with files, which guarantees that the file will be closed even if errors occur.
-
-Let's compare two approaches:
-
-```python
-# Traditional approach (requires explicit file closing)
-file = open('example.txt', 'w')
-try:
-    file.write("Example text")
-finally:
-    file.close()  # The file needs to be closed explicitly
-    print("File closed manually")
-
-# Approach using with (safer)
-with open('example.txt', 'w') as file:
-    file.write("Example text")
-# The file is automatically closed after exiting the with block
-print("File automatically closed after the with block")
+```text
+Hello, world!
+Python is a great programming language.
+This line was added later.
 ```
-
-It is strongly recommended to always use the `with` context manager when working with files in Python! 👍
 
 ## Exception Handling When Working with Files
 
-Various errors can occur when working with files:
+Various errors can occur when working with files: the file isn't there, you don't have permission to access it, the disk is full.
 
--   The file doesn't exist
--   Insufficient permissions to access the file
--   The disk is full
--   Etc.
-
-It's good practice to handle these errors:
+Catching such errors and reacting to them is the job of the `try/except` construct (it has its own lesson later in the course). Here it's enough to see it in action on files: the `try` block attempts the operation, and `except` catches a specific error if it happened.
 
 ```python
 # Handling possible errors when opening a file
@@ -206,72 +256,22 @@ try:
         content = file.read()
 except FileNotFoundError:
     print("Error: File not found!")
-except PermissionError:
-    print("Error: Insufficient permissions to access the file!")
-except Exception as e:
-    print(f"An error occurred: {e}")
-```
-
-## Additional File Operations
-
-Python provides many additional capabilities for working with files:
-
-### Moving the Pointer
-
-```python
-# Moving the pointer in a file
-with open('sample.txt', 'r') as file:
-    # Let's read the first 5 characters
-    print(file.read(5))
-
-    # Let's move the pointer to the beginning of the file
-    file.seek(0)
-    print("After file.seek(0):", file.read(5))
-
-    # Let's move the pointer to the 6th position
-    file.seek(6)
-    print("After file.seek(6):", file.read(5))
-```
-
-### Getting the Current Position
-
-```python
-# Getting the current pointer position
-with open('sample.txt', 'r') as file:
-    print(f"Initial position: {file.tell()}")
-    file.read(10)
-    print(f"Position after reading 10 characters: {file.tell()}")
-    file.readline()
-    print(f"Position after reading a line: {file.tell()}")
+<output>
+Error: File not found!
+</output>
 ```
 
 ## Working with File Paths
 
-When working with files, it's important to specify paths correctly. Python provides the `os.path` module and the `pathlib` module to make working with paths easier:
+So far we've written file names plainly: `open('notes.txt')`. Python looks for such a file in the current directory, the one the program was started from.
 
-```python
-import os
+If the file sits in a neighbouring folder, you need a path. Gluing one out of strings is risky: on macOS and Linux the parts are separated by `/`, on Windows by `\`. A path written by hand breaks as soon as the code moves to another system.
 
-# Current working directory
-current_dir = os.getcwd()
-print(f"Current directory: {current_dir}")
+So paths are assembled with the `pathlib` module from the standard library.
 
-# Joining paths (correctly handling separators)
-data_file = os.path.join(current_dir, 'data', 'info.txt')
-print(f"Path to file: {data_file}")
+In `pathlib` a path is an object rather than a string: parts are joined with the `/` operator, and the name, the extension and the existence check live right on the object. Such code reads closer to how a path actually looks.
 
-# Checking if a file exists
-sample_exists = os.path.exists('sample.txt')
-print(f"File sample.txt exists: {sample_exists}")
-
-# Getting the filename and extension
-filename = "path/to/document.pdf"
-basename = os.path.basename(filename)
-name, ext = os.path.splitext(basename)
-print(f"Filename: {name}, extension: {ext}")
-```
-
-A more modern approach using `pathlib`:
+In the sandbox the current directory is `/home/pyodide`; on your own computer the path will differ.
 
 ```python
 from pathlib import Path
@@ -279,25 +279,62 @@ from pathlib import Path
 # Current directory
 current_path = Path.cwd()
 print(f"Current directory: {current_path}")
+<output>
+Current directory: /home/pyodide
+</output>
 
 # Creating a path
 data_file = current_path / 'data' / 'info.txt'
 print(f"Path to file: {data_file}")
-
-# Checking if a file exists
-sample_path = Path('sample.txt')
-print(f"File sample.txt exists: {sample_path.exists()}")
+<output>
+Path to file: /home/pyodide/data/info.txt
+</output>
 
 # Getting the filename and extension
 document_path = Path("path/to/document.pdf")
 print(f"Filename: {document_path.stem}, extension: {document_path.suffix}")
+<output>
+Filename: document, extension: .pdf
+</output>
+```
+
+Checking existence is the `exists()` method: it answers whether a real file is at that path. Below, `sample.txt` sits next to the program and `missing.txt` does not:
+
+**sample.txt**
+
+```text
+First line
+Second line
+Third line
+```
+
+**main.py**
+
+```python
+from pathlib import Path
+
+print(Path('sample.txt').exists())
+print(Path('missing.txt').exists())
+
+```
+
+Run `main.py`, and the output is:
+
+```text
+True
+False
 ```
 
 ## Understanding Check
 
-Let's check how well you've understood the topic of working with files:
+**What happens to the contents if you open an existing file in `'w'` mode?**
 
-**Which code correctly opens a file for writing and appends a string to the end of the file?**
+1. **Correct answer:** The old contents are wiped and the file starts from scratch — The "w" mode clears the file silently, with no warning, and it does so the moment the file is opened — before the first write(). To append to the end you need the "a" mode.
 
+2. The new data is appended, the old data stays — That is how the "a" mode behaves. "w" starts the file with a clean slate.
+
+3. Python refuses to open the file because it already exists — An existing file is opened by "w" without complaint. It is the "r" mode that complains the other way round: if the file is missing, it raises FileNotFoundError.
+
+4. Nothing changes until write() is called — The file is cleared at the moment it is opened. Even if you close it right away without writing a single line, the previous contents are gone.
 
 In future lessons, we'll delve deeper into working with specific file types, such as text files, CSV, JSON, and others.

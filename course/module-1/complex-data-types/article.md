@@ -1,6 +1,14 @@
+---
+meta:
+    title: "Complex Data Types in Python"
+    description: "Overview of complex data types in Python: lists, tuples, sets, and dictionaries. Their features, differences, and applications."
+---
+
 # Complex Data Types in Python
 
-We've already familiarized ourselves with simple (scalar) data types in Python. Now it's time to move on to more powerful tools — complex (composite) data types, which allow us to store and process collections of values.
+So far each variable has held a single value: a name, an age, a price. But data rarely comes one piece at a time. A shopping list is many items. A point on a map is latitude and longitude together. A user profile is a name, an email, and a city under one object. Making a separate variable for every value quickly becomes unworkable.
+
+For cases like these Python has complex types: they hold many values at once under a single name. There are four of them, and they differ in how they organize the data inside.
 
 ## What are complex data types?
 
@@ -33,39 +41,41 @@ person = {"name": "Alex", "age": 30, "city": "New York"}
 
 Key differences between the main complex data types:
 
-| Data Type             | Syntax             | Main Properties                                                  | When to Use                                              |
-| --------------------- | ------------------ | ---------------------------------------------------------------- | -------------------------------------------------------- |
-| **List (list)**       | `[1, 2, 3]`        | ✅ Mutable<br/> ✅ Ordered<br/> ✅ Index access                  | When order matters and you need to modify the collection |
-| **Tuple (tuple)**     | `(1, 2, 3)`        | ❌ Immutable<br/> ✅ Ordered<br/> ✅ Index access                | To protect data from changes (coordinates, constants)    |
-| **Set (set)**         | `{1, 2, 3}`        | ✅ Mutable<br/> ❌ Unordered<br/> ❌ No indexes                  | When you need only unique elements                       |
-| **Dictionary (dict)** | `{"key": "value"}` | ✅ Mutable<br/> ✅ Ordered (since Python 3.7)<br/> ✅ Key access | For connecting values with unique keys                   |
+| Data Type             | Syntax             | Main Properties                                                    | When to Use                                              |
+| --------------------- | ------------------ | ------------------------------------------------------------------ | -------------------------------------------------------- |
+| **List (list)**       | `[1, 2, 3]`        | ✅ Mutable<br /> ✅ Ordered<br /> ✅ Index access                  | When order matters and you need to modify the collection |
+| **Tuple (tuple)**     | `(1, 2, 3)`        | ❌ Immutable<br /> ✅ Ordered<br /> ✅ Index access                | To protect data from changes (coordinates, constants)    |
+| **Set (set)**         | `{1, 2, 3}`        | ✅ Mutable<br /> ❌ Unordered<br /> ❌ No indexes                  | When you need only unique elements                       |
+| **Dictionary (dict)** | `{"key": "value"}` | ✅ Mutable<br /> ✅ Ordered (since Python 3.7)<br /> ✅ Key access | For connecting values with unique keys                   |
+
+> **Note:** an empty pair of curly braces `{}` creates an **empty dictionary**, not an empty set. To create an empty set, use `set()`.
 
 ## When to use different data types?
 
 The choice of an appropriate data type depends on the task:
 
--   **List (list)** — when the order of elements is important and the collection may change
+- **List (list)** — when the order of elements is important and the collection may change
 
     ```python
     # Daily to-do list
     todo_list = ["Buy groceries", "Walk the dog", "Write code"]
     ```
 
--   **Tuple (tuple)** — when data should not change and order is important
+- **Tuple (tuple)** — when data should not change and order is important
 
     ```python
     # Point coordinates in 3D space
     point_3d = (10.5, 8.3, 9.1)
     ```
 
--   **Set (set)** — when you only need unique elements and order doesn't matter
+- **Set (set)** — when you only need unique elements and order doesn't matter
 
     ```python
     # Unique user names
     unique_users = {"alice", "bob", "charlie"}
     ```
 
--   **Dictionary (dict)** — when data is organized as key-value pairs
+- **Dictionary (dict)** — when data is organized as key-value pairs
     ```python
     # User information
     user = {"username": "alex123", "email": "alex@example.com", "active": True}
@@ -96,15 +106,12 @@ Let's check how well you've understood the basic complex data types:
 
 **Which data type is best suited for storing unique elements when order doesn't matter?**
 
+1. List (list) — Lists preserve the order of elements but don't guarantee their uniqueness.
 
-## Conclusion
+2. Tuple (tuple) — Tuples, like lists, preserve the order of elements but don't guarantee their uniqueness.
 
-Complex data types in Python are powerful tools that allow you to organize,
-store, and process collections of values.
+3. **Correct answer:** Set (set) — Sets store only unique elements and don't preserve the order in which they were added.
 
-Choosing the right data type for a specific task can significantly simplify your code and make it more efficient.
+4. Dictionary (dict) — Dictionaries store key-value pairs where keys are unique, but this isn't the optimal choice if you just need to store a set of unique elements.
 
-In the following articles, we'll examine each of these types in detail, study their methods, and
-learn how to work with them.
-
-Let's start by exploring [lists](/guide/lists), the most flexible and frequently used complex data type in Python!
+In the following lessons we'll explore each of these types in detail. Let's start with [lists](https://python-academy.org/en/guide/lists), the most flexible and frequently used complex data type.

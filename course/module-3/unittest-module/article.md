@@ -1,10 +1,16 @@
+---
+meta:
+    title: "The unittest module: the classic test framework"
+    description: "unittest is the built-in xUnit framework in Python: TestCase, assertEqual/assertTrue methods, setUp/tearDown. What you meet in legacy code."
+---
+
 # The unittest module: the classic framework
 
-Python's standard library has its own testing framework: `unittest`. The style is classic OOP: tests live in classes, inherit from `TestCase`, and use special `assert*` methods (if you've used JUnit in Java, this will look familiar). Most new projects pick `pytest`, but `unittest` is still around:
+You open an older codebase, and the tests don't look like the ones you just wrote: classes, inheritance from `TestCase`, checks via `self.assertEqual` instead of a plain `assert`. That's `unittest` — the testing framework from Python's standard library, in classic OOP style (familiar to anyone who's seen JUnit in Java). Most new projects pick `pytest`, but `unittest` hasn't gone anywhere and still shows up:
 
--   In legacy code (the framework's been there since Python 2.1).
--   In projects that ban external dependencies.
--   In tests of the standard library itself.
+- In legacy code (the framework's been there since Python 2.1).
+- In projects that ban external dependencies.
+- In tests of the standard library itself.
 
 Knowing the basics is useful: sooner or later you'll open someone else's repo with `unittest` and need to navigate it.
 
@@ -29,10 +35,10 @@ if __name__ == "__main__":
 
 What differs from pytest:
 
--   Tests live in a **class** that inherits from `unittest.TestCase`.
--   Method names start with `test_`, same as pytest.
--   Instead of plain `assert`, you use **special methods**: `self.assertEqual(a, b)` instead of `assert a == b`.
--   `unittest.main()` at the end is the entry point for `python test_file.py`.
+- Tests live in a **class** that inherits from `unittest.TestCase`.
+- Method names start with `test_`, same as pytest.
+- Instead of plain `assert`, you use **special methods**: `self.assertEqual(a, b)` instead of `assert a == b`.
+- `unittest.main()` at the end is the entry point for `python test_file.py`.
 
 Run via plain `python` or `python -m unittest`:
 
@@ -46,14 +52,14 @@ python -m unittest test_addition.py
 
 `TestCase` ships with many specialized assertions. Six come up daily:
 
-| Method                       | Checks                       |
-| ---------------------------- | ---------------------------- |
-| `assertEqual(a, b)`          | `a == b`                     |
-| `assertNotEqual(a, b)`       | `a != b`                     |
-| `assertTrue(x)`              | `bool(x) is True`            |
-| `assertFalse(x)`             | `bool(x) is False`           |
-| `assertIn(item, container)`  | `item in container`          |
-| `assertRaises(Exception)`    | block raises the exception   |
+| Method                      | Checks                     |
+| --------------------------- | -------------------------- |
+| `assertEqual(a, b)`         | `a == b`                   |
+| `assertNotEqual(a, b)`      | `a != b`                   |
+| `assertTrue(x)`             | `bool(x) is True`          |
+| `assertFalse(x)`            | `bool(x) is False`         |
+| `assertIn(item, container)` | `item in container`        |
+| `assertRaises(Exception)`   | block raises the exception |
 
 Example of `assertRaises` via a context manager:
 
@@ -95,17 +101,19 @@ class TestUserStorage(unittest.TestCase):
         self.assertEqual(self.users["id"], 1)
 ```
 
+![Illustration: class TestUserStorage(unittest.TestCase) containing a numbered sequence: 1.setUp 2.test_has_name 3.tearDown 4.setUp 5.test_has_id 6.tearDown; setUp/tearDown run again for each test](https://python-academy.org/static/guidePage/unittest-module/setup-teardown-en.webp "setUp and tearDown run for EVERY test")
+
 For each test the cycle `setUp → test_X → tearDown` restarts; that guarantees tests are independent. There are also `setUpClass`/`tearDownClass` for one-time-per-class setup, but those are special cases.
 
 ## unittest vs pytest
 
-| What                | unittest                       | pytest                            |
-| ------------------- | ------------------------------ | --------------------------------- |
-| Tests               | methods of a `TestCase` class | top-level functions               |
-| Assertions          | `self.assertEqual()` etc.      | plain `assert`                    |
-| Setup               | `setUp` / `tearDown`           | fixtures with DI and scope        |
-| Parametrization     | manual or via extensions       | `@pytest.mark.parametrize`        |
-| Dependencies        | built in                       | `pip install pytest`              |
+| What            | unittest                      | pytest                     |
+| --------------- | ----------------------------- | -------------------------- |
+| Tests           | methods of a `TestCase` class | top-level functions        |
+| Assertions      | `self.assertEqual()` etc.     | plain `assert`             |
+| Setup           | `setUp` / `tearDown`          | fixtures with DI and scope |
+| Parametrization | manual or via extensions      | `@pytest.mark.parametrize` |
+| Dependencies    | built in                      | `pip install pytest`       |
 
 pytest is more concise and more flexible, and is the default for new projects. But `unittest` is built in and needs no install; for scripts and stdlib tests that's a plus.
 
@@ -124,11 +132,16 @@ class TestUserAPI(unittest.TestCase):
         # ... testing code that uses requests.get
 ```
 
-## What's next?
-
-Next (and last article in the testing module): how to measure **coverage** with `pytest-cov` and automate test runs with **CI** (using GitHub Actions as an example).
-
----
+## Understanding check
 
 **What is true about the unittest module?**
 
+1. **Correct answer:** Test classes in unittest must inherit from unittest.TestCase — TestCase is what gives you the assert\* methods, setUp/tearDown, and the runner integration.
+
+2. unittest uses plain assert for checks — No, unittest uses specialized methods (self.assertEqual, self.assertTrue etc.). Plain assert is the pytest style.
+
+3. setUp runs once before all tests in the class — setUp runs before every single test. Once-per-class is setUpClass.
+
+4. Test methods in unittest can be named anything — The runner only picks up methods whose name starts with test. A method with any other name simply will not run as a test.
+
+Next (and last article in the testing module): how to measure **coverage** with `pytest-cov` and automate test runs with **CI** (using GitHub Actions as an example).

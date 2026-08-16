@@ -1,139 +1,115 @@
+---
+meta:
+    title: "Type Annotations in Python"
+    description: "How to hint argument and result types: annotation syntax, collections, the X | None notation and type aliases."
+---
+
 # Type Annotations in Python
 
-In large projects, it can be difficult to tell at a glance what data a function accepts or exactly what a variable holds. To make code more predictable and safe, Python introduced **type annotations**.
-
-Compare two versions of the same function:
+In large projects it can be hard to tell at a glance what data a function accepts. Compare two versions of the same stub:
 
 ```python
-# Before: what is user? An object? Database record? What does it return?
+# What is user? An object? A string with a name? What does the function return?
 def get_discount(user):
     pass
 
-# After: it is instantly clear we pass an ID (integer) and receive a discount (float)
+# Immediately clear: we pass an ID (integer), we get a discount (float)
 def get_discount(user_id: int) -> float:
     pass
 ```
 
-Annotations help developers and IDEs (Integrated Development Environments) clearly understand what data types are expected in different parts of the program, significantly speeding up coding and debugging.
+The `: int` and `-> float` marks are **type annotations**: hints about what types of values the function takes and returns.
 
-## What are Type Annotations?
+> **Type annotations** are a special syntax for explicitly stating the expected data types of variables, function arguments and return values.
 
-> **Type Annotations (Type Hints)** are a special syntax in Python that allows you to explicitly specify the expected data types for variables, function arguments, and return values.
+## Hints, not restrictions
 
-It is crucial to understand: **Python remains a dynamically typed language**. Type annotations are merely _hints_. Python itself won't stop the execution of your program if you pass a string instead of a number at runtime. However, they are indispensable for:
-
--   Improving code autocompletion in your IDE (like PyCharm or VS Code)
--   Static code analysis (using tools like `mypy`)
--   Self-documenting code (making the code much easier to read and understand)
-
-## Basic Syntax
-
-### Variable Annotation
-
-To annotate a variable, place a colon `:` after the variable name, followed by its type:
+Python remains a dynamically typed language: at runtime an annotation checks nothing. Let's make sure:
 
 ```python
-# Annotating basic types
+def double(x: int) -> int:
+    return x * 2
+
+print(double(5))
+<output>
+10
+</output>
+print(double("ha"))   # the annotation didn't stop the string
+<output>
+haha
+</output>
+```
+
+The program didn't crash: to Python an annotation is just a note. The value comes from the tools around your code — the editor and the IDE. We'll see exactly how at the end of the lesson.
+
+## Basic syntax
+
+For a variable, the type goes after the name, separated by a colon:
+
+```python-interactive
 name: str = "Alex"
 age: int = 28
 height: float = 1.82
 is_developer: bool = True
 ```
 
-### Function Annotation
-
-For functions, we can specify types for the passed arguments and the type of the return value (using the arrow `->`):
+In functions you annotate the arguments and — with the `->` arrow — the return value:
 
 ```python
 def greet(name: str, age: int) -> str:
-    return f"Hello, {name}! You are {age} years old."
+    return f"Hi, {name}! You are {age} years old."
 
-message = greet("John", 25)
+message = greet("Ivan", 25)
 print(message)
+<output>
+Hi, Ivan! You are 25 years old.
+</output>
 ```
 
-In this example:
+If a function returns nothing, write `-> None`.
 
--   `name: str` — a string is expected
--   `age: int` — an integer is expected
--   `-> str` — the function promises to return a string
+## Annotating collections
 
-_(Note: if a function does not return anything, we use `None` as the return type, e.g., `-> None`)._
+For collections you also state the type of their contents:
 
-## Typing Collections (Lists, Dictionaries)
-
-You can use standard collections to annotate their contents:
-
-```python
-# A list of integers
+```python-interactive
 numbers: list[int] = [1, 2, 3, 4, 5]
 
-# A dictionary where keys are strings and values are integers
+# Keys are strings, values are numbers
 user_ages: dict[str, int] = {
-    "John": 25,
+    "Ivan": 25,
     "Anna": 22
 }
 
-# A tuple with a strict structure: (string, integer, float)
+# A tuple with a fixed structure: (string, integer, float)
 user_info: tuple[str, int, float] = ("Alex", 30, 75.5)
-
-# A set of strings
-unique_names: set[str] = {"John", "Anna", "Peter"}
 ```
 
-## The typing Module
+## A value or None
 
-For more complex scenarios, we use the built-in `typing` module:
+A common case: a function returns a value — or `None` when nothing was found. This is written with a vertical bar:
 
-### Optional
-
-If a variable can contain a value of a specific type **or** `None`, use `Optional`:
-
-```python
-from typing import Optional
-
-def get_user_email(user_id: int) -> Optional[str]:
+```python-interactive
+def get_user_email(user_id: int) -> str | None:
     if user_id == 1:
         return "admin@example.com"
-    return None  # Return None if the user is not found
+    return None
 ```
 
-### Union
+The same bar joins any types: `int | float` means "an integer or a float":
 
-When a variable can take one of several possible types:
-
-```python
-from typing import Union
-
-# The function can accept either an integer or a float
-def process_price(price: Union[int, float]) -> float:
-    return float(price) * 1.2  # Add 20% tax
+```python-interactive
+def process_price(price: int | float) -> float:
+    return float(price) * 1.2
 ```
 
-### Callable (Functions as Arguments)
+> In older code you'll see `Optional[str]` instead of `str | None`, and `Union[int, float]` instead of `int | float`, from the `typing` module. They mean the same thing: the `|` notation appeared in Python 3.10 and is now preferred.
 
-If you pass a function as an argument to another function, you can type it as well.
+## Type aliases
 
-`Callable` takes two arguments: a list of input parameter types and the return type:
+To avoid repeating long types over and over, give them names:
 
-```python
-from typing import Callable
-
-def apply_twice(value: int, func: Callable[[int], int]) -> int:
-    return func(func(value))
-
-def double(x: int) -> int:
-    return x * 2
-
-result = apply_twice(3, double)  # double(double(3)) = 12
-```
-
-## Creating Custom Types (Type Aliases)
-
-To avoid writing long, complex types multiple times, you can create **type aliases**:
-
-```python
-# Creating an alias
+```python-interactive
 Coordinates = tuple[float, float]
 UserDict = dict[str, str | int]
 
@@ -144,14 +120,20 @@ def process_user(user: UserDict) -> None:
     pass
 ```
 
-## Why Do We Need All This?
+## Why bother
 
-1. **Fewer Bugs**: Your code editor will highlight an error in red _even before running the program_ if you try to pass a string `""` where an `int` is expected.
-2. **Perfect Autocompletion**: The IDE will know exactly what methods are available on the object because you specified its type.
-3. **Easier to Read Code**: Reading the signature `def get_user(user_id: int) -> dict[str, str]:`, you instantly understand that the function takes a numeric ID and returns a dictionary. You don't have to read through the entire body of the function to figure that out.
+1. **Fewer bugs**: the editor underlines a mismatch before you even run the program, if you pass a string where an `int` is expected.
+2. **Precise autocompletion**: the IDE knows the value's type — so it knows its methods.
+3. **Easier reading**: the header `def get_user(user_id: int) -> dict[str, str]:` tells the whole story without reading the body.
 
-## Checking Your Understanding
+## Understanding check
 
-Let's check your knowledge of type annotations:
+**How do you describe a function that takes an integer and a string-or-None, and returns a list of numbers?**
 
-**How do you properly annotate a function that takes an integer and an optional string (which can be None), and returns a list of integers?**
+1. def process(id: int, name: str) -> list\[int]: — Here name is a required string, while the task says it may also be None.
+
+2. def process(id: int, name: str | None) -> list: — The returned list has no content type — it should be list\[int].
+
+3. **Correct answer:** def process(id: int, name: str | None) -> list\[int]: — str | None allows a string or None, and list\[int] specifies what the list contains.
+
+4. def process(id: Integer, name: str | None) -> list\[int]: — Python's built-in type is called int, not Integer.

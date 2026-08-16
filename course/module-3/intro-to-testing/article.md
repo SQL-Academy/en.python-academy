@@ -1,119 +1,114 @@
-# Testing Fundamentals in Python: What, Why, and Types of Tests
+---
+meta:
+    title: "Why Tests Matter and What Kinds Exist"
+    description: "Why bugs are cheaper to catch early, the types of tests (unit, integration, E2E), the testing pyramid and the FIRST principles."
+---
 
-Imagine you're building a bridge — would you let people cross it without first checking how safe it is?
+# Why tests matter and what kinds exist
 
-The same principle applies to your code! Testing helps ensure your programs work as expected, even when you make changes or add new features.
+You fixed one function, shipped the update — and a day later a user writes that something else broke, something that worked yesterday. A change in one place quietly affected another, and you were the last to find out.
 
-## What is Software Testing?
+Testing is how you learn about breakages like this right away, not from users. It's a set of checks that confirm your code does what it's expected to — and keeps doing it after every change.
 
-> **Software testing** is the process of investigating and evaluating a software product to verify that it meets the specified requirements and to identify potential defects (errors or bugs) before end-users encounter them.
+## Why test at all
 
-Simply put, it's a way to make sure your code does what it's supposed to do and doesn't do what it's not supposed to do.
+In 1999, NASA lost a $125 million Mars orbiter because of a simple mistake: the calculations mixed different unit systems. A single test could have caught the mismatch before launch.
 
-## Why is Testing Necessary? Key Benefits
+That's an extreme case of a general rule — the later a bug is found, the more it costs to fix:
 
-Have you ever sent a message with an embarrassing typo? 😳 Imagine if your code had the same problem, but instead of slight embarrassment, it led to serious consequences!
+| When the bug is found   | Relative cost of fixing |
+| ----------------------- | ----------------------- |
+| During development      | 1x                      |
+| During code review      | 2x                      |
+| During QA testing       | 5x-10x                  |
+| After release (in prod) | 30x-100x+               |
 
-### 1. Early Bug Detection and Reduced Cost of Fixing
+Beyond catching bugs early, tests give you a few more things:
 
-In 1999, NASA lost a \$125 million Mars orbiter due to a simple calculation error involving different unit systems. A simple test could have detected this discrepancy before launch 🚀.
+- **confidence when changing code** — with a test suite you can refactor and add features boldly: if something breaks, the tests are the first to tell you;
+- **living documentation** — tests show how the code is meant to be used and, unlike ordinary docs, never go stale;
+- **better design** — if a function is hard to test, it's usually just built too complex;
+- **protection from regressions** — that's the name for breakage of previously working code after new changes; the example below catches exactly those.
 
-Software errors can range from minor inconveniences to catastrophic failures with huge financial losses, security issues, or damage to reputation.
+## Types of tests
 
-**The later a bug is found, the more expensive it is to fix:**
+Tests differ in the scale of what they check — from a single function to the whole system.
 
-| When Bug is Found          | Relative Cost to Fix |
-| -------------------------- | -------------------- |
-| During Development         | 1x                   |
-| During Code Review         | 2x                   |
-| During QA Testing          | 5x-10x               |
-| After Release (Production) | 30x-100x+            |
+### Unit tests
 
-Testing helps identify problems early, when fixing them requires less time and resources.
-
-### 2. Confidence When Making Changes and Refactoring
-
-Have you ever been afraid to change existing code for fear of breaking something? Having a good set of tests gives you a "safety net." You can confidently refactor, add new features, or fix bugs, knowing that tests will alert you if something goes wrong.
-
-### 3. Tests as Living Documentation
-
-Well-written tests serve as a form of living, executable documentation. They clearly demonstrate how your code should be used and what behavior is expected from it. Unlike static documentation, tests don't become outdated because they must pass for every version of the code.
-
-### 4. Improving Code Design
-
-The process of writing tests often forces you to think about the structure and design of your code. If a function or module is difficult to test, it might be a sign that it's too complex, has too many dependencies, or violates the single responsibility principle. Testability is an important aspect of good design.
-
-### 5. Preventing Regressions
-
-Regressions are bugs that reappear in previously working code after changes have been made. Automated tests effectively catch such problems, ensuring that old functionality hasn't been accidentally broken.
-
-## Types of Tests
-
-There are several levels and types of tests, each serving its own purpose.
-
-### 1. Unit Tests
-
-Unit tests check the smallest, isolated parts of your program — individual functions, methods, or classes. The goal is to ensure that each "building block" of your code works correctly on its own.
+They check the smallest, isolated parts of the program — individual functions, methods or classes. The goal is to make sure every "brick" of the code works correctly on its own.
 
 ```python
-# Example: function for addition
 def add(a, b):
     return a + b
 
-# Simple manual test (concept)
-# result = add(2, 3)
-# expected = 5
-# print(f"Test passed: {result == expected}")
-# Later we'll see how to automate this with frameworks
+print(add(2, 3) == 5)
+<output>
+True
+</output>
 ```
 
-### 2. Integration Tests
+The check returned `True` — the function works as expected. Now imagine someone edited `add` and accidentally broke the logic:
 
-Integration tests check the interaction between multiple modules or components of the system. For example, how your order processing module interacts with the notification module or the database. They help ensure the "building blocks" fit together correctly.
+```python
+def add(a, b):
+    return a + b + 1        # a bug that slipped in
 
--   **Example**: Verifying that after a user is successfully created in the database (one module), the authentication system (another module) can recognize them.
+print(add(2, 3) == 5)
+<output>
+False
+</output>
+```
 
-### 3. Functional / End-to-End (E2E) Tests
+The same check instantly returned `False`. That's what a unit test is: a small check that tells you by itself whether the function is intact — that's how regressions get caught. In the next article we'll see how to write such checks with `assert` and run them in batches.
 
-These tests check the entire system or a significant part of it from the user's perspective. They simulate real user scenarios, going through all layers of the application — from the user interface (if one exists) to the database.
+### Integration tests
 
--   **Example**: A complete scenario of registering a new user on a website: filling out the form, submitting data, receiving a confirmation email, logging in for the first time.
+They check how several modules work together: for example, that after a user is created in the database, the login system recognizes them. Modules can be fine on their own and still fail to fit together — that's what gets caught here.
 
-## The Testing Pyramid
+### End-to-end tests (E2E)
 
-The testing pyramid is a model that helps visualize the recommended ratio of different types of tests in a project.
+They check the whole system from the user's point of view, passing through every layer of the application. An example is the full signup scenario: fill in the form, submit the data, receive the email, log in.
 
-![Description of the testing pyramid](https://python-academy.org/static/guidePage/intro-to-testing/en_testing.jpg 'Description of the testing pyramid')
+## The testing pyramid
 
-**The idea of the pyramid:**
+How many of each kind should you write? The usual answer is drawn as a pyramid:
 
--   **Unit Tests** form the base. You should have the most of these, as they are fast, reliable, and pinpoint the location of errors accurately.
--   **Integration Tests** are on the next level. There are fewer of them than unit tests, and they verify the interaction between components.
--   **Functional (E2E) Tests** are at the top. You should have the fewest of these, as they are slow, brittle (often break due to UI changes), and expensive to maintain.
+| Level            | Characteristics |
+| ---------------- | --------------- |
+| Unit             | fast · many     |
+| Integration      | in between      |
+| End-to-end (E2E) | slow · few      |
 
-Adhering to this structure helps create an effective and reliable testing strategy.
+The higher the level, the slower and more expensive the tests — so there are fewer of them. The bulk is fast unit tests: they point exactly at the place of the breakage.
 
-## Principles of a Good Test (FIRST)
+## Principles of a good test (FIRST)
 
-For tests to be truly useful, they should adhere to certain principles. The acronym FIRST helps remember them:
+Five traits of a useful test spell the acronym FIRST:
 
--   **F**ast: Tests should run quickly. Slow tests slow down development and are run less often.
--   **I**ndependent/Isolated: Tests should not depend on each other. The order in which they run should not affect the outcome. Each test should set up its own environment and clean up if necessary.
--   **R**epeatable: Tests should produce the same result every time they are run in the same environment. No random failures or dependency on external mutable factors.
--   **S**elf-Validating: The test should determine whether it passed or failed without requiring manual inspection of the results. This is usually achieved using `assert` statements.
--   **T**imely/Thorough: Tests should be written in a timely manner (ideally, before or along with the code they test - TDD). They should be thorough enough to cover important aspects of the code under test, including edge cases.
+- **F**ast: slow tests get run rarely;
+- **I**ndependent: doesn't rely on other tests or the run order;
+- **R**epeatable: gives the same result on every run;
+- **S**elf-validating: tells you by itself whether it passed, with no manual comparison of results;
+- **T**imely: written together with the code, not "someday later".
 
-## Brief Introduction to Testing Frameworks
+## Testing frameworks
 
-While you can write checks manually, as in the `add` function example, this quickly becomes inefficient. Testing frameworks provide tools and structure for writing, organizing, and running tests, as well as for reporting results.
+Writing checks by hand, as in the `add` example, gets old fast: you want batch runs, reports, convenient comparisons. That's what frameworks are for, and Python has two main ones:
 
-Popular frameworks in Python include:
+- **pytest** — third-party, with a concise syntax; that's where we'll start;
+- **unittest** — built into the standard library.
 
--   **`pytest`**: A powerful and flexible third-party framework known for its concise syntax. We will start our exploration with this one.
--   **`unittest`**: Python's built-in module that follows the classic xUnit style.
+## Understanding check
 
-## What's Next?
+**Which statement about software testing is the most accurate?**
 
-In the next article, we will dive into the practical writing of tests using the `pytest` framework, which will help us easily and effectively automate the verification of our code.
+1. **Correct answer:** Testing helps discover bugs at early stages of development, reducing the cost of fixing them. — The earlier a bug is caught, the cheaper the fix — up to a hundredfold difference between development and production.
 
-**Which statement about software testing is most accurate?**
+2. The main goal of testing is to reach 100% code coverage. — Coverage is a useful metric (we'll talk about it later), but 100% coverage by itself doesn't guarantee the absence of bugs. Test quality matters more.
+
+3. Functional (E2E) tests are the fastest and should form the base of the testing pyramid. — According to the testing pyramid, the base is unit tests: they are the fastest and most numerous. End-to-end tests sit at the top of the pyramid.
+
+4. The FIRST principle means tests should above all be Thorough, even if they are slow. — FIRST specifically stresses being Fast: slow tests get run rarely, and that makes them less useful.
+
+In the next article — hands-on practice with `pytest`: your first real tests, the `assert` statement and batch runs.

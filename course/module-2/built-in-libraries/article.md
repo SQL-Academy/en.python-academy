@@ -1,26 +1,22 @@
-# Python Built-in Libraries
+---
+meta:
+    title: "Python's built-in libraries"
+    description: "An overview of the most useful built-in Python libraries, what they do, and practical usage examples."
+---
 
-Imagine you just got a new smartphone. Right after purchase, it already has a calendar, calculator, camera, and other useful applications installed. Python's built-in libraries work in a similar way! 🧰
+# Python's built-in libraries
 
-Built-in libraries are modules that come with Python and are available immediately after installation. They provide ready-made solutions for the most common programming tasks.
+Compute a factorial, find today's date, shuffle a list, read JSON — none of this needs anything installed. It already ships with Python out of the box: dozens of ready-made modules available right after an `import`, with no `pip install`. This is the standard (built-in) library.
 
 ## What are built-in libraries?
 
-> Built-in libraries (standard library) are a set of modules that are included in the Python distribution and can be used without additional installation.
+> Built-in libraries (the standard library) are a set of modules included in the Python distribution that you can use without any additional installation.
 
-The Python standard library includes:
+## The main built-in libraries
 
--   Modules for system interaction
--   Tools for data processing
--   Utilities for network operations
--   Tools for creating user interfaces
--   And much more
+Let's go through several of the most useful built-in libraries in Python.
 
-## Main built-in libraries
-
-Let's look at several of the most useful Python built-in libraries.
-
-### math — mathematical functions
+### math: mathematical functions
 
 The `math` module provides access to mathematical functions defined in the C language standard:
 
@@ -29,145 +25,131 @@ import math
 
 # Constants
 print(f"Number π: {math.pi}")
+<output>
+Number π: 3.141592653589793
+</output>
 print(f"Number e: {math.e}")
+<output>
+Number e: 2.718281828459045
+</output>
 
 # Trigonometric functions
 angle = math.pi / 4  # 45 degrees in radians
 print(f"Sine of 45°: {math.sin(angle):.4f}")
+<output>
+Sine of 45°: 0.7071
+</output>
 print(f"Cosine of 45°: {math.cos(angle):.4f}")
+<output>
+Cosine of 45°: 0.7071
+</output>
 
 # Other functions
 print(f"Factorial of 5: {math.factorial(5)}")
+<output>
+Factorial of 5: 120
+</output>
 print(f"Greatest common divisor of 12 and 18: {math.gcd(12, 18)}")
+<output>
+Greatest common divisor of 12 and 18: 6
+</output>
 ```
 
-### random — generating random numbers
+### random: generating random numbers
 
-The `random` module provides functions for generating random numbers and selecting random elements:
+The `random` module provides functions for generating random numbers and picking random elements:
 
 ```python
 import random
 
 # Generating a random integer in a range
-print(f"Random number from 1 to 10: {random.randint(1, 10)}")
+print(f"Random number between 1 and 10: {random.randint(1, 10)}")
+<output>
+Random number between 1 and 10: 7
+</output>
 
-# Random floating-point number from 0 to 1
-print(f"Random number from 0 to 1: {random.random():.4f}")
+# Random float between 0 and 1
+print(f"Random number between 0 and 1: {random.random():.4f}")
+<output>
+Random number between 0 and 1: 0.3528
+</output>
 
-# Selecting a random element from a sequence
+# Picking a random element from a sequence
 fruits = ["apple", "banana", "orange", "pear"]
 print(f"Random fruit: {random.choice(fruits)}")
+<output>
+Random fruit: orange
+</output>
 
 # Shuffling a sequence
 numbers = [1, 2, 3, 4, 5]
 random.shuffle(numbers)
 print(f"Shuffled numbers: {numbers}")
+<output>
+Shuffled numbers: [3, 1, 5, 2, 4]
+</output>
 ```
 
-### datetime — working with dates and time
+### datetime: dates and times
 
-The `datetime` module provides classes for working with dates and time:
+The `datetime` module can parse dates from strings, add intervals to them, and format them back. That set is enough for typical date operations:
 
 ```python
-import datetime
+from datetime import datetime, timedelta
 
-# Current date and time
-now = datetime.datetime.now()
-print(f"Current date and time: {now}")
+# parse a string into a date using the "day.month.year" pattern
+d = datetime.strptime("31.12.2022", "%d.%m.%Y")
 
-# Creating a specific date
-specific_date = datetime.date(2023, 12, 31)
-print(f"Specified date: {specific_date}")
+# add an interval
+new_d = d + timedelta(days=5)
 
-# Difference between dates
-today = datetime.date.today()
-new_year = datetime.date(today.year + 1, 1, 1)
-days_until_new_year = (new_year - today).days
-print(f"Days until New Year: {days_until_new_year}")
-
-# Formatting dates
-formatted_date = now.strftime("%d.%m.%Y %H:%M")
-print(f"Formatted date: {formatted_date}")
+# format the date back into a string
+print(new_d.strftime("%d.%m.%Y"))
+<output>
+05.01.2023
+</output>
 ```
 
-### os — interacting with the operating system
+This is just the tip of the iceberg — `datetime` can do a lot more, and it has its own chapter, "Working with dates and times", later in the module.
 
-The `os` module provides functions for interacting with the operating system:
+Two more big standard-library topics have chapters of their own, so here we'll just name the modules:
+
+| What you need   | Module          | Where we cover it      |
+| --------------- | --------------- | ---------------------- |
+| Files and paths | `os`, `pathlib` | "Working with files"   |
+| JSON and CSV    | `json`, `csv`   | "JSON and CSV formats" |
+
+But `collections` didn't get its own chapter, so let's look at it right now.
+
+### collections: specialised data types
+
+The `collections` module provides several convenient data structures on top of the built-in ones. One of the most useful is `Counter` for counting elements:
 
 ```python
-import os
+from collections import Counter
 
-# Getting the current working directory
-print(f"Current directory: {os.getcwd()}")
+orders = ["apple", "banana", "apple", "cherry", "apple", "banana"]
+counts = Counter(orders)
 
-# List of files and folders in a directory
-files = os.listdir('.')
-print(f"First 3 files in the current directory: {files[:3]}")
-
-# System information
-print(f"Operating system name: {os.name}")
-
-# Check if a file or directory exists
-file_exists = os.path.exists('example.txt')
-print(f"File example.txt exists: {file_exists}")
+# most_common() sorts by count, highest first
+print(counts.most_common())
+<output>
+[('apple', 3), ('banana', 2), ('cherry', 1)]
+</output>
 ```
 
-### json — working with JSON format
+The module also has `defaultdict`, `namedtuple`, `deque` and others, advanced tools that will come in handy later.
 
-The `json` module provides functions for working with data in JSON format:
-
-```python
-import json
-
-# Python dictionary
-person = {
-    "name": "John",
-    "age": 30,
-    "city": "New York",
-    "languages": ["Python", "JavaScript", "SQL"]
-}
-
-# Converting a dictionary to a JSON string
-person_json = json.dumps(person, indent=4)
-print("JSON string:")
-print(person_json)
-
-# Converting a JSON string to a Python object
-json_string = '{"name": "Mary", "age": 25, "city": "San Francisco"}'
-person_dict = json.loads(json_string)
-print(f"Name: {person_dict['name']}, Age: {person_dict['age']}")
-```
-
-### collections — specialized data types
-
-The `collections` module provides alternative data structures for Python:
-
-```python
-from collections import Counter, defaultdict, namedtuple
-
-# Counter - counting elements
-text = "Programming in Python is interesting and enjoyable"
-character_count = Counter(text.lower())
-print("Three most frequent characters:")
-for char, count in character_count.most_common(3):
-    print(f"'{char}': {count}")
-
-# defaultdict - dictionary with default value
-fruit_categories = defaultdict(list)
-fruit_categories["yellow"].append("banana")
-fruit_categories["red"].append("apple")
-fruit_categories["red"].append("strawberry")
-print(f"Yellow fruits: {fruit_categories['yellow']}")
-print(f"Green fruits: {fruit_categories['green']}")  # Empty list
-
-# namedtuple - named tuples
-Person = namedtuple('Person', ['name', 'age', 'job'])
-alice = Person('Alice', 30, 'engineer')
-print(f"{alice.name}, {alice.age} years old, works as an {alice.job}")
-```
-
-## Understanding Check
-
-Let's check how well you've understood the topic of built-in libraries:
+## Understanding check
 
 **Which library is best suited for working with dates in Python?**
+
+1. math — The math library is meant for mathematical computation, not for working with dates.
+
+2. **Correct answer:** datetime — The datetime library is purpose-built for working with dates and times.
+
+3. random — The random library is used for generating random numbers, not for working with dates.
+
+4. json — The json library is meant for working with the JSON format, not for dates.
+
+In the next lesson we'll look at [third-party libraries](https://python-academy.org/en/guide/third-party-libraries), the ones installed via `pip install` that extend Python beyond the standard distribution.

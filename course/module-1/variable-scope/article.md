@@ -1,29 +1,39 @@
-# Variable Scope in Python
+---
+meta:
+    title: "Variable scope in Python"
+    description: "Local and global variables in Python, the global keyword, the typical UnboundLocalError trap, and how to properly pass data between functions."
+---
 
-Today we'll explore an important concept in programming — variable scope.
+# Variable scope in Python
 
-If variables are "boxes" for storing data, then scope determines where these boxes are available and can be used. It's like different rooms in a house — some things are available only in a specific room, while others are available throughout the entire house! 🏠
+Python programs are almost never written as one long wall of code. They're assembled from **functions** — separate pieces of code, each with its own name and its own job. You declare a function with the word `def`, and `return` says what result it hands back. We'll cover them properly in their own chapter; for now it's enough to be able to read this:
 
-## What is scope?
+```python
+def area_circle(radius):
+    result = 3.14 * radius * radius
+    return result
 
-> Variable scope is the part of a program where a variable is accessible for use. It defines where and how a variable can be used in the code.
+def area_square(side):
+    result = side * side
+    return result
+```
 
-Understanding variable scope is an **important skill** that helps you prevent errors and write more structured code. In Python, variables can have different scopes, which affects their accessibility and lifetime.
+Two functions here, and both use a variable named `result` inside. They don't interfere with each other: each function works with its own `result`, and one doesn't affect the other.
 
-## Local and Global Variables
+## What is variable scope?
 
-In Python, there are two main types of variables in terms of scope:
+The rule Python uses to decide which variable a name refers to at any given point in the code is called **variable scope**. It has two levels:
 
-1. **Global variables** - created in the main body of the program and accessible in all parts of the program
-2. **Local variables** - created inside functions and accessible only inside those functions
+- **global** scope: anything declared in the main body of the program, visible inside every function
+- **local** scope: variables declared inside a function, alive only while that function is running
 
-Imagine a school: global variables are like announcements on the main bulletin board that are visible to everyone, while local variables are like notes on boards in individual classrooms, visible only to students in that particular class.
+A useful image: scopes are like rooms in an apartment. Things on your personal desk are accessible only to you (a local variable inside a function). A note on the fridge is visible to the whole family (a global variable).
 
-![Description of variable scope differences](https://python-academy.org/static/guidePage/variable-scope/ru_scope.png 'Illustration of local and global variables')
+![Global and local variables: main program and two functions](https://python-academy.org/static/guidePage/variable-scope/scope-en.webp "Local and global variables")
 
-### Global Variables
+## Global variables
 
-Global variables are defined outside of functions and can be used both inside functions and outside of them:
+Global variables are defined outside any function and accessible both from within functions and outside them:
 
 ```python
 # Create a global variable
@@ -33,150 +43,171 @@ def show_message():
     # Use the global variable inside the function
     print(message)
 
-show_message()  # Call the function
+show_message()
+<output>
+Hello, world!
+</output>
 
 print(f"Variable outside the function: {message}")
+<output>
+Variable outside the function: Hello, world!
+</output>
 ```
 
-Global variables are convenient when data needs to be accessible in all parts of the program, but their excessive use can make debugging and code maintenance more difficult.
+The more globals you use, the harder the code is to debug: to understand what a function does, you have to look beyond its arguments and also remember which outside variables it reads.
 
-### Local Variables
+## Local variables
 
-Local variables are created inside functions and exist only during the execution of that function. After the function completes, they are removed from memory:
+Local variables are created inside a function and exist only while that function is running. Once it returns, they disappear from memory:
 
 ```python
 def calculate_sum():
-    # Local variables
     a = 10
     b = 20
     result = a + b
     print(f"Sum inside the function: {result}")
 
 calculate_sum()
+<output>
+Sum inside the function: 30
+</output>
 
-# Attempt to access a local variable outside the function
+# Trying to access a local variable outside the function
 try:
-    print(f"Trying to access result: {result}")
+    print(f"result: {result}")
 except NameError as e:
     print(f"Error: {e}")
+<output>
+Error: name 'result' is not defined
+</output>
 ```
 
-As you can see, the variable `result` exists only inside the `calculate_sum()` function and is not accessible outside of it. It's like leaving your belongings in a hotel room — they're only accessible while you're in the room! 🏨
+The variable `result` exists only inside `calculate_sum()` and doesn't leak out.
 
-### Priority of Local Variables
+## When names collide
 
-When a variable is created inside a function with the same name as a global variable, Python gives priority to the local version:
+If a function creates a variable with the same name as a global one, the local one takes precedence. This is called **shadowing**: the local "shadows" the global without touching it:
 
 ```python
 x = "global"
 
 def test_scope():
-    x = "local"  # Local variable with the same name
+    x = "local"
     print(f"Inside function: x = {x}")
 
 test_scope()
+<output>
+Inside function: x = local
+</output>
 
 print(f"Outside function: x = {x}")
+<output>
+Outside function: x = global
+</output>
 ```
 
-In this example, two different variables named `x` are created (local and global), despite having the same name. The local variable doesn't affect the global one and vice versa — they're like namesakes living in different cities! 👥
+These are two completely different variables that happen to share a name. Like two people with the same name living in different cities: same name, different individuals.
 
-This is very important to understand in order to avoid confusion in your code!
+## Modifying a global variable from a function
 
-## Modifying Global Variables
-
-What if you need to modify a global variable inside a function? By default, Python interprets assigning a value to a variable inside a function as creating a new local variable:
+By default, any assignment inside a function is treated as creating a new local variable:
 
 ```python
 x = "global"
 
 def modify_global():
-    # Python will create a new local variable x
-    x = "new local"  # This variable doesn't change the global one
+    x = "new local"  # This is a local, the global is unchanged
     print(f"Inside function: x = {x}")
 
 modify_global()
+<output>
+Inside function: x = new local
+</output>
 
 print(f"Outside function: x = {x}")
+<output>
+Outside function: x = global
+</output>
 ```
 
-As we can see, the function didn't change the global variable. To directly modify a global variable inside a function, the `global` keyword is used.
-
-### The global Keyword
-
-The `global` keyword tells Python that the variable should be taken from the global scope, rather than created locally:
+To actually have a function change a global variable, you must explicitly say `global x` at the start of the function:
 
 ```python
 x = "global"
 
 def modify_global():
-    global x  # Indicate that we're using the global variable
-    x = "global modified"
+    global x
+    x = "global changed"
     print(f"Inside function: x = {x}")
 
 modify_global()
+<output>
+Inside function: x = global changed
+</output>
 
 print(f"Outside function: x = {x}")
+<output>
+Outside function: x = global changed
+</output>
 ```
 
-Now the function has successfully modified the global variable! It's like having a remote control that allows you to change things in another room! 📱
+The `global` keyword signals to anyone reading the code: "this function isn't just doing its own job, it reaches outside." For that reason, use it only when no other path is available.
 
-The `global` keyword also allows creating new global variables inside functions:
+## The most common trap: UnboundLocalError
+
+A function reads a global variable and immediately reassigns it:
 
 ```python
-def create_global_var():
-    global new_var  # Create a global variable
-    new_var = "This variable will be accessible outside the function"
-    print("Variable created inside function")
+x = 10
 
-create_global_var()
-
-# Now the variable is accessible outside the function
-print(f"Variable outside function: {new_var}")
+def show():
+    print(x)        # read
+    x = x + 1       # and reassign right after
 ```
 
-But remember — with great power comes great responsibility! Use `global` only when it's truly necessary.
+You'd expect the function to print `10` and bump `x` up to `11`. Instead, running it crashes with `UnboundLocalError: local variable 'x' referenced before assignment`.
 
-## Best Practices for Working with Scope
+What's going on? Python looks at the function **as a whole** before executing it and decides which names are local. It sees `x = ...` inside, so `x` is declared in this function and is therefore local. On the top line, `print(x)` then tries to read the **local** `x`, which doesn't yet have a value, and crashes.
 
-When working with variable scope in Python, it's recommended to follow these practices:
-
-1. **Minimize the use of global variables** — they make code harder to understand and can lead to unpredictable results.
-
-2. **Pass data through function parameters** — this makes the code more explicit and modular:
-
-```python
-def add(a, b):
-    result = a + b
-    return result
-
-x = 5
-y = 10
-sum_result = add(x, y)  # Pass variables as arguments
-print(f"{x} + {y} = {sum_result}")
-```
-
-3. **Use return values instead of modifying global variables**:
+For this function to work with the global `x`, you'd need `global x` at the top. But usually there's a cleaner path: don't touch the global, take `x` as a parameter and return the new value:
 
 ```python
 def increment(value):
     return value + 1
 
-count = 0
-print(f"Initial value: {count}")
-
-# Update the value through a return value
-count = increment(count)
-print(f"After increment: {count}")
-
-# We can call the function multiple times
-count = increment(increment(count))
-print(f"After double increment: {count}")
+x = 10
+x = increment(x)
+print(x)
+<output>
+11
+</output>
 ```
 
-## Understanding Check
+## When global is justified, and when it isn't
 
-<VariableScopeGuessOutput />
+The most predictable way to handle data is: don't modify globals; pass values through parameters and return new ones via `return`:
 
-Now you understand how variable scope works in Python.
-This is an important concept that will help you write more structured, understandable, and predictable code.
+```python
+def add(a, b):
+    return a + b
+
+x = 5
+y = 10
+sum_result = add(x, y)
+print(f"{x} + {y} = {sum_result}")
+<output>
+5 + 10 = 15
+</output>
+```
+
+This kind of function is honest: its result is fully determined by what came in. Nothing happens behind the scenes. That makes both testing and reading easier: a glance at the signature tells you everything.
+
+`global` is justified when a variable really should live at program level: a configuration value, a shared counter. But in most practice tasks it isn't needed.
+
+## Understanding check
+
+Let's see how well you've understood variable scope.
+
+The interactive demonstration is available [in the Python Academy lesson](https://python-academy.org/en/guide/variable-scope).
+
+In the next lesson we'll look at basic data types in Python: what's behind `int`, `str`, `float`, `bool`, and which operations are defined on each.

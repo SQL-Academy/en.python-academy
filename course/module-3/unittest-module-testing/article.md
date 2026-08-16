@@ -1,3 +1,9 @@
+---
+meta:
+    title: "unittest Module: Standard Testing Library"
+    description: "Master Python built-in unittest module, which provides a powerful framework for creating and running tests."
+---
+
 # unittest Module: Standard Testing Library
 
 In previous articles, we explored testing with pytest and became familiar with coverage and continuous integration concepts. However, Python also offers a built-in testing solution — the **unittest** module. Understanding it is valuable both for grasping the fundamentals of testing in Python and for working with codebases that use this module.
@@ -8,16 +14,16 @@ The `unittest` module is Python's standard library for testing, inspired by Java
 
 Key features of unittest:
 
--   **Built-in**: Included in Python's standard library, requires no additional installation
--   **OOP approach**: Tests are organized in classes that inherit from `unittest.TestCase`
--   **Rich assertion set**: Provides numerous methods for verifying results
--   **Setup and cleanup**: Supports methods for setting up and cleaning up the environment between tests
+- **Built-in**: Included in Python's standard library, requires no additional installation
+- **OOP approach**: Tests are organized in classes that inherit from `unittest.TestCase`
+- **Rich assertion set**: Provides numerous methods for verifying results
+- **Setup and cleanup**: Supports methods for setting up and cleaning up the environment between tests
 
 ## unittest Basics
 
 Let's create a simple test using unittest:
 
-```python
+```python-interactive
 import unittest
 
 def add(a, b):
@@ -39,6 +45,13 @@ class TestAddFunction(unittest.TestCase):
 # Run the tests
 if __name__ == '__main__':
     unittest.main()
+<output>
+...
+----------------------------------------------------------------------
+Ran 3 tests in 0.001s
+
+OK
+</output>
 ```
 
 As you can see, we:
@@ -69,7 +82,7 @@ The `TestCase` class provides numerous assertion methods that help verify expect
 
 ### Example of Using Different Assertions
 
-```python
+```python-interactive
 import unittest
 
 class TestAssertionMethods(unittest.TestCase):
@@ -100,6 +113,13 @@ class TestAssertionMethods(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+<output>
+...
+----------------------------------------------------------------------
+Ran 5 tests in 0.001s
+
+OK
+</output>
 ```
 
 ## Test Environment Setup and Cleanup
@@ -111,7 +131,7 @@ Unittest provides special methods for preparing the environment before tests run
 3. **setUpClass()**: Runs once before all tests in the class
 4. **tearDownClass()**: Runs once after all tests in the class
 
-```python
+```python-interactive
 import unittest
 
 class DatabaseTest(unittest.TestCase):
@@ -143,13 +163,30 @@ class DatabaseTest(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+<output>
+Connecting to database (executed once)
+
+Creating test data (before each test)
+Running test 1
+Cleaning up test data (after each test)
+
+Creating test data (before each test)
+Running test 2
+Cleaning up test data (after each test)
+Closing database connection (executed once)
+.
+----------------------------------------------------------------------
+Ran 2 tests in 0.001s
+
+OK
+</output>
 ```
 
 These methods are particularly useful when tests require common setup or cleanup of resources such as:
 
--   Database connections
--   Files and network connections
--   Creating and deleting temporary data
+- Database connections
+- Files and network connections
+- Creating and deleting temporary data
 
 ## Running Tests
 
@@ -183,7 +220,7 @@ This command automatically finds all tests in the `tests` directory and runs the
 
 Unittest allows handling special cases in tests:
 
-```python
+```python-interactive
 import unittest
 import sys
 
@@ -204,14 +241,21 @@ class TestSkippingAndFailing(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+<output>
+...
+----------------------------------------------------------------------
+Ran 3 tests in 0.001s
+
+OK (skipped=2, expected failures=1)
+</output>
 ```
 
 Decorators for special cases:
 
--   `@unittest.skip(reason)`: Always skips the test
--   `@unittest.skipIf(condition, reason)`: Skips the test if the condition is true
--   `@unittest.skipUnless(condition, reason)`: Skips the test if the condition is not true
--   `@unittest.expectedFailure`: Marks the test as expected to fail
+- `@unittest.skip(reason)`: Always skips the test
+- `@unittest.skipIf(condition, reason)`: Skips the test if the condition is true
+- `@unittest.skipUnless(condition, reason)`: Skips the test if the condition is not true
+- `@unittest.expectedFailure`: Marks the test as expected to fail
 
 ## unittest vs pytest: When to Use Which?
 
@@ -227,15 +271,15 @@ Decorators for special cases:
 
 **When to use unittest:**
 
--   In projects where an OOP approach is preferred
--   When you need to avoid external dependencies
--   When working with existing unittest code
+- In projects where an OOP approach is preferred
+- When you need to avoid external dependencies
+- When working with existing unittest code
 
 **When to use pytest:**
 
--   For new projects
--   When code conciseness is important
--   When advanced features (fixtures, parameterization) are needed
+- For new projects
+- When code conciseness is important
+- When advanced features (fixtures, parameterization) are needed
 
 ## Working with Complex Scenarios
 
@@ -243,7 +287,7 @@ Unittest can handle more complex testing scenarios:
 
 ### Testing Classes
 
-```python
+```python-interactive
 import unittest
 
 class Calculator:
@@ -287,13 +331,20 @@ class TestCalculator(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+<output>
+...
+----------------------------------------------------------------------
+Ran 4 tests in 0.001s
+
+OK
+</output>
 ```
 
 ### Mocking with unittest.mock
 
 The `unittest.mock` module provides tools for simulating objects during testing:
 
-```python
+```python-interactive
 import unittest
 from unittest.mock import Mock, patch
 
@@ -336,6 +387,13 @@ class TestWebService(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+<output>
+...
+----------------------------------------------------------------------
+Ran 2 tests in 0.001s
+
+OK
+</output>
 ```
 
 ## Best Practices with unittest
@@ -350,3 +408,11 @@ if __name__ == '__main__':
 ## Understanding Check
 
 **Which statement about the unittest module is most accurate?**
+
+1. unittest requires installing additional packages — Incorrect. unittest is a built-in module available in the Python standard library without additional installation.
+
+2. unittest allows writing tests as regular functions without classes — Incorrect. unittest uses an object-oriented approach, and tests must be written as methods in classes that inherit from unittest.TestCase.
+
+3. **Correct answer:** unittest provides assertion methods for checking expected results — Correct! unittest provides numerous assertion methods (such as assertEqual, assertTrue, etc.) through the TestCase class for verifying expected results.
+
+4. unittest has no capabilities for setting up and cleaning up the test environment — Incorrect. unittest provides setUp, tearDown, setUpClass, and tearDownClass methods for setting up and cleaning up the test environment.

@@ -1,3 +1,9 @@
+---
+meta:
+    title: "Why Tests Are Needed"
+    description: "Understanding the importance of testing in software development: benefits, real-world examples, and the costs of not testing."
+---
+
 # Why Tests Are Needed
 
 Ever sent a message with an embarrassing typo? 😳 Imagine if your code had the same problem, but instead of a little embarrassment, it caused a rocket to crash or a bank transaction to fail! This is why we test our code - to catch mistakes before they have serious consequences.
@@ -23,7 +29,7 @@ The later a bug is found, the more expensive it is to fix:
 
 Tests help ensure your code works correctly and reliably.
 
-```python
+```python-interactive
 def divide(a, b):
     return a / b
 
@@ -33,6 +39,9 @@ try:
     print(f"Result: {result}")
 except ZeroDivisionError as e:
     print(f"Error occurred: {e}")
+<output>
+Error occurred: division by zero
+</output>
 
 # With proper testing, you catch this before it happens in production
 def safe_divide(a, b):
@@ -42,6 +51,10 @@ def safe_divide(a, b):
 
 print(safe_divide(10, 2))
 print(safe_divide(10, 0))
+<output>
+5.0
+Cannot divide by zero
+</output>
 ```
 
 ### 2. Documentation
@@ -61,12 +74,15 @@ def test_user_creation():
 
 Have you ever been afraid to change code because you might break something? With tests, you can make changes confidently ✨.
 
-```python
+```python-interactive
 # Original function
 def get_full_name(first, last):
     return f"{first} {last}"
 
 print(get_full_name("John", "Doe"))
+<output>
+John Doe
+</output>
 
 # Enhanced function with tests to ensure it still works
 def get_full_name_v2(first, last, middle=None):
@@ -84,6 +100,10 @@ for case in test_cases:
     middle = case.get("middle")
     result = get_full_name_v2(case["first"], case["last"], middle)
     print(f"Expected: {case['expected']}, Got: {result}, Passed: {result == case['expected']}")
+<output>
+Expected: John Doe, Got: John Doe, Passed: True
+Expected: Jane Elizabeth Smith, Got: Jane Elizabeth Smith, Passed: True
+</output>
 ```
 
 ### 4. Preventing regressions
@@ -125,20 +145,20 @@ def process_payment(payment_info):
 
 Sometimes we skip testing because we're in a hurry or don't see the value. But consider these real consequences:
 
--   **Financial losses**: A bank's software bug could transfer millions to the wrong accounts
--   **Reputation damage**: A social media app that accidentally makes private posts public
--   **Security breaches**: Untested code might contain vulnerabilities that hackers can exploit
--   **Lost productivity**: Developers spend more time fixing bugs than building new features
--   **Stress and burnout**: The constant pressure of dealing with production emergencies
+- **Financial losses**: A bank's software bug could transfer millions to the wrong accounts
+- **Reputation damage**: A social media app that accidentally makes private posts public
+- **Security breaches**: Untested code might contain vulnerabilities that hackers can exploit
+- **Lost productivity**: Developers spend more time fixing bugs than building new features
+- **Stress and burnout**: The constant pressure of dealing with production emergencies
 
 ## How much testing is enough?
 
 There's no one-size-fits-all answer, but here are some guidelines:
 
--   **Critical systems** (medical, financial): Aim for 90%+ code coverage
--   **Business applications**: 70-80% code coverage is often reasonable
--   **Prototypes/MVPs**: Focus on testing core functionality
--   **Open source**: Enough tests to give contributors confidence they haven't broken anything
+- **Critical systems** (medical, financial): Aim for 90%+ code coverage
+- **Business applications**: 70-80% code coverage is often reasonable
+- **Prototypes/MVPs**: Focus on testing core functionality
+- **Open source**: Enough tests to give contributors confidence they haven't broken anything
 
 Remember that test quality matters more than quantity! A few well-designed tests are better than many poorly written ones.
 
@@ -146,14 +166,21 @@ Remember that test quality matters more than quantity! A few well-designed tests
 
 **Which of the following is NOT a benefit of writing tests?**
 
+1. **Correct answer:** Tests eliminate the need for code reviews — Tests complement code reviews but don't replace them. Both are important quality tools.
+
+2. Tests act as documentation for how code should work — Tests do serve as executable documentation, showing how functions are expected to behave.
+
+3. Tests help catch bugs before they reach production — This is one of the main benefits of testing - finding issues early.
+
+4. Tests make code changes safer and easier — With a good test suite, you can refactor with confidence that you haven't broken functionality.
 
 ## A testing mindset
 
 Beyond just writing tests, developing a "testing mindset" can make you a better programmer:
 
--   Think about edge cases before writing code
--   Consider what could go wrong, not just what should go right
--   Write code with testability in mind
--   Use assertions to document assumptions
+- Think about edge cases before writing code
+- Consider what could go wrong, not just what should go right
+- Write code with testability in mind
+- Use assertions to document assumptions
 
 In the next lesson, we'll dive into `unittest` - Python's built-in framework for writing and running tests.

@@ -1,6 +1,12 @@
+---
+meta:
+    title: "pytest: fixtures and parametrization"
+    description: "pytest fixtures for shared setup via @pytest.fixture with yield, and parametrization via @pytest.mark.parametrize. The two features you reach for daily."
+---
+
 # pytest: fixtures and parametrization
 
-In the previous article we wrote simple test functions. Now we'll cover two things that keep tests from turning into copy-paste: **fixtures** (shared setup for many tests) and **parametrization** (one test, many inputs).
+A dozen tests, each beginning with the same three lines: build a user, fill in the fields, open a connection. A new field gets added to the project — and you edit those lines in every test, missing one, of course. That's the copy-paste that rots a test suite. Two things in this article remove it: **fixtures** (shared setup for many tests) and **parametrization** (one test, many inputs).
 
 ## Fixtures: shared setup
 
@@ -47,6 +53,8 @@ def test_read(temp_file):
 
 Code **before** `yield` runs before the test (setup); code **after** runs after the test (teardown). Works even if the test fails.
 
+![Illustration: setup (code before yield) → test → teardown (code after yield); three blocks linked by arrows](https://python-academy.org/static/guidePage/pytest-fixtures-parametrization/fixture-lifecycle-en.webp "yield fixture: code before yield = setup, code after yield = teardown")
+
 ## Scope: how often to recreate
 
 By default, a fixture runs **per test**. If setup is expensive (open a DB, load a big file), tell pytest to do it "once per session" with `scope="session"`:
@@ -66,26 +74,24 @@ In practice, 95% of the time you'll use `function` (default, one instance per te
 
 If a fixture is needed in multiple files, put it in `conftest.py` next to your tests. No import needed, pytest finds it automatically:
 
-<CodeProject
-    defaultFile="test_api.py"
-    files={[
-        {
-            path: 'conftest.py',
-            content: `import pytest
+**conftest.py**
+
+```python
+import pytest
 
 @pytest.fixture(scope="session")
 def app_config():
     return {"api_url": "https://test.example.com", "timeout": 5}
-`,
-        },
-        {
-            path: 'test_api.py',
-            content: `def test_api_url(app_config):     # fixture from conftest.py
+
+```
+
+**test_api.py**
+
+```python
+def test_api_url(app_config):     # fixture from conftest.py
     assert "example.com" in app_config["api_url"]
-`,
-        },
-    ]}
-/>
+
+```
 
 That's the standard way to share fixtures across the tests of a project.
 
@@ -131,11 +137,16 @@ test_discount.py::test_get_discount[30-True-0.1]   PASSED
 
 If one case fails, the test name shows its parameters, so it's immediately clear which combination broke.
 
-## What's next?
-
-Next up: **mocks and stubs**, how to isolate tests from external dependencies (DB, API, time) so they stay fast and predictable.
-
----
+## Understanding check
 
 **What is true about fixtures and parametrization in pytest?**
 
+1. A fixture with scope="function" runs once per whole session — The opposite: scope="function" is the default and the fixture runs for every test. Once per session is scope="session".
+
+2. **Correct answer:** conftest.py lets you share fixtures across files without importing — pytest auto-discovers fixtures in conftest.py for tests in that directory and its subdirectories.
+
+3. @pytest.mark.parametrize sets the scope of a fixture — No, parametrize runs a test with different inputs. Fixture scope is set with @pytest.fixture(scope=...).
+
+4. yield in a fixture only returns a value, nothing else — It returns the value, but the code AFTER yield runs as teardown, once the test is done.
+
+Next up: **mocks and stubs**, how to isolate tests from external dependencies (DB, API, time) so they stay fast and predictable.

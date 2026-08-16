@@ -1,34 +1,47 @@
+---
+meta:
+    title: "Course structure"
+    description: "What the Python course is made of: three modules, from variables to async. How executable code blocks and self-testing tasks work."
+---
+
 # Course structure
 
-This course is divided into 3 modules, not counting the introduction module. Each module can be considered as a mini-course,
-which aims to study a certain group of knowledge in the field of Python.
+The course is three modules, not counting the introduction you are reading right now. Each module works like a mini-course: it takes its own group of topics and sees them through.
 
-Although the modules can be completed independently of each other, we still recommend taking the course in order.
+- **Fundamentals of Python I** — variables, data types, functions, conditions, loops and collections. The things every Python program is built from.
+- **Fundamentals of Python II** — libraries and modules, working with files, classes and objects, exceptions, decorators, dates.
+- **Advanced Python** — databases, testing, threading and async.
 
-At the end of most practical topics there is a block "Tasks for self-testing" so that you can immediately practice using
-new knowledge.
+The order is not arbitrary: each module stands on the one before it. In the second you will write functions and loop over lists from the first, and the third does not hold together without them. If the basics are already familiar, skim what you know — but don't start in the middle.
 
-## Interfaces
+## The code block
 
-During the course of this course, you will meet possibly non-standard components, so it is described below how to interact with them.
+Almost every article has a code block in it. It looks like this:
 
-### Block of executable code
-
-Perhaps the most popular component will be the executable code block, it looks like this:
-
-```python-executable
+```python
 print("Hi, I love Python 😊")
 
+<output>
+Hi, I love Python 😊
+</output>
 ```
 
-If it has an active blue button, then this code can be executed. When you click on the request execution button, the code will open in a new tab in the sandbox.
+The line marked with `>_` is not code any more — it's the result: what Python printed after running the line above. So read the block top to bottom: first what we asked for, then what came back.
 
-![Description of the block with executable code](https://python-academy.org/static/guidePage/intro-structure-of-course/en_codeplayground_description.png 'Description of the block with executable code')
+Four icons live in the top right of the block:
 
-### Self-testing tasks
+![Executable code block](https://python-academy.org/static/guidePage/intro-structure-of-course/code-block-en.webp "Executable code block")
 
-It is strongly recommended not to skip the tasks at the end of each article, they look like this:
+The ▶ icon isn't on every block — only on the ones whose code can be run. It opens the code in the **<a href="https://python-academy.org/en/sandbox" target="_blank">sandbox</a>**: a separate tab where you can change it and run it as many times as you like.
 
-![Description of self-test tasks](https://python-academy.org/static/guidePage/intro-structure-of-course/en_exercises_description.png 'Description of self-test tasks')
+One detail about ▶: it sends only its own block to the sandbox, nothing more. So every example is self-contained — everything the code needs is declared right in it, and you can run the blocks in any order.
 
-It is recommended to solve problems while logged in, so all your solutions will be saved.
+## Self-testing tasks
+
+Not in every article, but in many — especially in "Fundamentals of Python I" — a block of tasks waits at the end:
+
+![Self-testing tasks](https://python-academy.org/static/guidePage/intro-structure-of-course/en_exercises_description.png "Self-testing tasks")
+
+Don't skip them. Reading about a loop and writing a loop are different things, and you only find out which is which at the keyboard 🎓.
+
+Log in before you start, otherwise your solutions won't be saved.

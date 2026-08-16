@@ -1,234 +1,103 @@
-# Text Files: Encodings, Efficient Processing, and Analysis
+---
+meta:
+    title: "Text Files in Python: Encodings and Parsing Text"
+    description: "The UTF-8 encoding and what happens when encodings do not match. Parsing a configuration file line by line."
+---
 
-In the previous article, we covered the basics of working with files in Python.
-Now, we will delve deeper into working with text files, which are one of the most common types of files in programming. 📝
+# Text Files: Encodings and Parsing Text
 
-Text files are used everywhere: for storing configurations, logs, data, program source code, and much more.
-The ability to work with them effectively is an essential skill for any programmer.
+In the previous article we covered the basics of working with files. Here comes what is specific to text: encodings and parsing the contents line by line.
 
-## Specifics of Working with Text Files
+## Encodings
 
-Text files store sequences of characters organized into lines. When working with them in Python, there are several important points to consider:
+On disk a file is just a sequence of bytes. To turn them back into letters, you need to know which scheme to use for the conversion: many such schemes have been invented, and different languages historically ended up with different ones.
 
-### Character Encodings
-
-> An encoding is a way of representing characters as bytes. Different encodings use different schemes to map characters.
-
-In the modern world, there are many different languages and alphabets.
-To allow computers to work with text in different languages, various character encoding systems have been developed:
-
--   **ASCII** — the simplest encoding, containing only Latin letters, numbers, and basic symbols (128 characters in total).
--   **UTF-8** — the modern standard that supports all languages of the world (including emoji 😊).
--   **Windows-1251** (cp1251) — an encoding for Cyrillic, popular in Windows.
-
-In Python, it is recommended to always use UTF-8, especially if your text contains more than just English letters:
+The modern standard is **UTF-8**: it covers every alphabet in the world at once, including emoji 😊. The rule for a beginner is simple: write and read in UTF-8, stating the encoding explicitly with the `encoding` parameter.
 
 ```python
-# Writing text in different encodings
-text = "Привет, мир! Hello, world! 你好，世界！"
+text = "Привет, мир! Hello, world!"
 
-# Writing in UTF-8 (standard for international texts)
 with open('text_utf8.txt', 'w', encoding='utf-8') as file:
     file.write(text)
 
-# Writing in ASCII (only English letters)
-try:
-    with open('text_ascii.txt', 'w', encoding='ascii') as file:
-        file.write(text)
-except UnicodeEncodeError as e:
-    print(f"ASCII encoding error: {e}")
-
-# Writing in cp1251 (Cyrillic for Windows)
-with open('text_cp1251.txt', 'w', encoding='cp1251') as file:
-    # Chinese characters will be replaced with '?'
-    file.write(text)
+with open('text_utf8.txt', 'r', encoding='utf-8') as file:
+    print(file.read())
+<output>
+Привет, мир! Hello, world!
+</output>
 ```
 
-As you can see, trying to write Russian or Chinese text in ASCII encoding causes an error, as ASCII only supports English characters.
-
-### Reading with the Correct Encoding
-
-When reading a file, it is important to specify the same encoding with which it was created:
+Trouble starts when the encodings don't match: the file was written using one scheme and is read using another. Let's try to read our file as `ascii` — an old encoding that only has Latin letters, digits, and punctuation:
 
 ```python
-# Reading a file with a specified encoding
-with open('text_utf8.txt', 'r', encoding='utf-8') as file:
-    content = file.read()
-    print(f"Content in UTF-8: {content}")
+with open('text_utf8.txt', 'w', encoding='utf-8') as file:
+    file.write("Привет, мир! Hello, world!")
 
-# Reading with the wrong encoding can lead to errors
 try:
     with open('text_utf8.txt', 'r', encoding='ascii') as file:
-        content = file.read()
-        print(f"Content with wrong encoding: {content}")
+        print(file.read())
 except UnicodeDecodeError as e:
     print(f"Decoding error: {e}")
+<output>
+Decoding error: 'ascii' codec can't decode byte 0xd0 in position 0: ordinal not in range(128)
+</output>
 ```
 
-### Determining a File's Encoding
+The very first byte of a Cyrillic letter doesn't fit into `ascii`, and Python stops with a `UnicodeDecodeError`. The opposite situation looks the same: writing Cyrillic in an encoding that doesn't know it raises a `UnicodeEncodeError`.
 
-Sometimes you receive a text file and don't know what encoding it was saved in.
-Python cannot automatically determine the encoding, but there are libraries that can help:
+The `try/except` construct is here only to keep the program from breaking off on the error. It has a lesson of its own later in the course, so there is no need to dig into it now.
 
-```python
-# The chardet library for detecting encoding
-import chardet
+## Parsing a Configuration File
 
-# Create a file in cp1251
-with open('text_cp1251.txt', 'w', encoding='cp1251') as file:
-    file.write("Привет, мир!")
+Program settings are often kept in a text file: every line is a "key = value" pair. Below are two files side by side: `config.ini` with the settings and `main.py`, which builds a dictionary out of them.
 
-# Read the file as bytes and determine the encoding
-with open('text_cp1251.txt', 'rb') as file:
-    raw_data = file.read()
-    result = chardet.detect(raw_data)
-    print(f"Detected encoding: {result}")
+**config.ini**
 
-    # Now we can open the file with the correct encoding
-    encoding = result['encoding']
-    with open('text_cp1251.txt', 'r', encoding=encoding) as text_file:
-        content = text_file.read()
-        print(f"Correctly read content: {content}")
+```text
+theme = dark
+language = en
+autosave = True
+
 ```
 
-## Efficiently Reading Large Text Files
-
-When working with large text files, it's important to use methods that don't load the entire file into memory.
-This is especially critical when you are working with files that are hundreds of megabytes or gigabytes in size.
-
-### Why You Shouldn't Read the Entire File at Once
-
-When you use the `read()` method without arguments, Python loads the entire file into memory:
+**main.py**
 
 ```python
-with open('big_file.txt', 'r') as file:
-    content = file.read()  # The entire file is loaded into memory!
-```
-
-This can cause problems:
-
-1.  **Memory Consumption** — if the file is very large (e.g., gigabytes), it can take up all available RAM, leading to a slowdown or even a program crash.
-2.  **Latency** — reading the entire file at once takes time, and your program will "hang" until the reading is complete.
-3.  **Inefficiency** — often, you don't need all the data at once, but rather sequential access to it.
-
-### Line-by-Line Reading
-
-A more efficient approach is to read the file line by line using a loop.
-Python will load only one line into memory at a time:
-
-```python
-# Create a test file with a large number of lines
-with open('big_file.txt', 'w') as file:
-    for i in range(1000):
-        file.write(f"Line number {i+1}\n")
-
-# Efficient reading line by line
-with open('big_file.txt', 'r') as file:
-    line_count = 0
-    for line in file:  # Iterate over lines without loading the whole file into memory
-        line_count += 1
-        if line_count <= 5:  # Show only the first 5 lines
-            print(line.strip())
-    print(f"Total lines: {line_count}")
-```
-
-The advantages of this approach are:
-
--   Only one line is in memory at a time.
--   Processing starts immediately; no need to wait for the entire file to load.
--   You can stop reading at any time if you find the data you need.
-
-### Reading in Chunks
-
-If you need even more control over the reading process, you can read the file in fixed-size chunks:
-
-```python
-# Reading a file in chunks
-with open('big_file.txt', 'r') as file:
-    block_size = 100  # Block size in bytes
-    blocks_read = 0
-
-    while True:
-        block = file.read(block_size)
-        if not block:  # If the block is empty, the end of the file has been reached
-            break
-
-        blocks_read += 1
-        if blocks_read <= 2:  # Show only the first 2 blocks
-            print(f"Block {blocks_read}: {block[:50]}...")  # Print the beginning of the block
-
-    print(f"Total blocks read: {blocks_read}")
-```
-
-This method allows you to control the amount of memory used for reading the file.
-The block size can be adjusted depending on your needs and available memory.
-
-## Practical Example: Reading and Processing a Configuration File
-
-Let's look at a simple practical example: reading a configuration file and using its parameters in a program:
-
-```python
-# Create a sample configuration file
-config_text = """
-# Database parameters
-database_host = localhost
-database_port = 5432
-database_name = myapp
-database_user = admin
-database_password = secret123
-
-# Web server parameters
-server_port = 8080
-debug_mode = True
-log_level = INFO
-"""
-
-with open('config.ini', 'w') as config_file:
-    config_file.write(config_text)
-
-# Reading and processing the configuration
 def read_config(filename):
     config = {}
 
-    with open(filename, 'r') as file:
+    with open(filename, 'r', encoding='utf-8') as file:
         for line in file:
-            # Skip empty lines and comments
-            line = line.strip()
-            if not line or line.startswith('#'):
-                continue
-
-            # Split key and value
-            if '=' in line:
-                key, value = line.split('=', 1)
-                config[key.strip()] = value.strip()
+            key, value = line.split('=', 1)  # cut at the first '=' only
+            config[key.strip()] = value.strip()
 
     return config
 
-# Read the configuration
-app_config = read_config('config.ini')
 
-# Use the parameters
-print("Application Configuration:")
-print(f"Database: {app_config['database_name']} on {app_config['database_host']}:{app_config['database_port']}")
-print(f"DB User: {app_config['database_user']}")
-print(f"Web Server Port: {app_config['server_port']}")
-print(f"Debug Mode: {app_config['debug_mode']}")
+settings = read_config('config.ini')
+
+print(settings)
+print(f"Theme: {settings['theme']}, language: {settings['language']}")
+
 ```
 
-In this example, we:
+Run `main.py`, and the output is:
 
-1.  Created a configuration file with parameters.
-2.  Wrote a function to read and process the file line by line.
-3.  Extracted the necessary parameters and used them in the program.
-
-This approach is often used in real applications to store settings in a human-readable format.
+```text
+{'theme': 'dark', 'language': 'en', 'autosave': 'True'}
+Theme: dark, language: en
+```
 
 ## Test Your Understanding
 
-Let's check how well you've understood the topic of reading and writing text files:
+**A file was written in UTF-8 but opened with `encoding='ascii'`. What happens?**
 
-**How do you correctly open a file for reading with UTF-8 encoding?**
+1. **Correct answer:** Python stops the program with a UnicodeDecodeError — Cyrillic bytes do not fit into ascii, and Python will not guess: the reading breaks off at the first byte that does not fit.
 
+2. The file is read, but the Cyrillic turns into garbage characters — Garbage characters appear when the bytes formally fit some other encoding. Ascii has no Cyrillic bytes at all, so Python reports an error instead of handing you nonsense.
 
-Now you know the basic principles of working with text files in Python.
-In the next article, we will look at working with structured data formats like JSON and CSV. See you there! 👋
+3. Python works out the real encoding on its own and reads it correctly — Python cannot detect the encoding from the contents. It uses the one you named, or the default one if you named none — which is exactly what causes errors on somebody else's file.
+
+4. Only the beginning of the file is read, up to the first Cyrillic letter — There is no partial result: the error is raised on the attempt to decode the offending byte, and \`read()\` returns nothing at all.
+
+In the next article we'll look at structured data formats — JSON and CSV.

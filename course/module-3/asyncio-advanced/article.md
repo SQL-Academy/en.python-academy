@@ -1,6 +1,14 @@
+---
+meta:
+    title: "Advanced asyncio: queues, synchronization, executor"
+    description: "asyncio.Queue for sharing data between coroutines, asyncio.Lock for synchronization, and most importantly run_in_executor for blocking code without stalling the event loop."
+---
+
 # Advanced asyncio in Python
 
-The previous article covered the basics of asyncio: `async def`, `await`, `gather`, Tasks. Here are three tools you'll reach for in real applications: queues between coroutines, synchronization, and (most importantly) running blocking code without stalling the event loop.
+An async service was holding thousands of connections and then froze all at once, for everyone. The cause was one line: someone called a synchronous `requests.get()`, and for a second it blocked the single event-loop thread, and with it every other coroutine.
+
+The asyncio basics from the previous article (`async def`, `await`, `gather`, Tasks) aren't enough here. For real applications you need three more tools: queues between coroutines, synchronization, and, above all, running blocking code without stalling the event loop.
 
 ## asyncio.Queue: passing data between coroutines
 
@@ -63,9 +71,11 @@ Besides `Lock` there's `asyncio.Event`, `asyncio.Semaphore`, `asyncio.Condition`
 
 ## Blocking code in asyncio: run_in_executor
 
-The cardinal rule of asyncio: **never call blocking functions directly**. `time.sleep(2)`, `requests.get()`, heavy math — anything blocking stalls the event loop and freezes every other coroutine.
+Back to the outage from the start of the chapter. The rule broken there: **never call blocking functions directly in the event loop**. `time.sleep(2)`, `requests.get()`, heavy math — anything blocking stalls the whole loop.
 
 But sometimes there's no avoiding it: an old synchronous library, a CPU-bound calculation. For that there's `loop.run_in_executor()`: run a blocking function in a **separate thread** (or process) while the event loop keeps going.
+
+![Illustration: event loop with await blocking_task() on the left; arrow labeled run_in_executor leads to a Thread Pool Executor on the right where time.sleep(2) runs; below, other coroutines keep running; arrow returns the result back to the event loop](https://python-academy.org/static/guidePage/asyncio-advanced/run-in-executor-en.webp "run_in_executor offloads a blocking function into a thread pool so the event loop is not blocked")
 
 ```python
 import asyncio
@@ -118,40 +128,39 @@ You'll rarely write these yourself; they're tools libraries (`aiohttp`, `asyncpg
 
 ## Comparing the three approaches
 
-| | threading | multiprocessing | asyncio |
-| --- | --- | --- | --- |
-| CPU parallelism | no (GIL) | yes | no (1 thread) |
-| I/O-bound | good | good but expensive | great |
-| Overhead | low | high | minimal |
-| Memory | shared | isolated | shared (1 thread) |
-| Sharing data | variables + Lock / Queue | Queue, Pipe, Manager | variables / asyncio.Queue |
-| Thousands of tasks | poor | very poor | excellent |
+|                    | threading                | multiprocessing      | asyncio                   |
+| ------------------ | ------------------------ | -------------------- | ------------------------- |
+| CPU parallelism    | no (GIL)                 | yes                  | no (1 thread)             |
+| I/O-bound          | good                     | good but expensive   | great                     |
+| Overhead           | low                      | high                 | minimal                   |
+| Memory             | shared                   | isolated             | shared (1 thread)         |
+| Sharing data       | variables + Lock / Queue | Queue, Pipe, Manager | variables / asyncio.Queue |
+| Thousands of tasks | poor                     | very poor            | excellent                 |
 
 **Rule of thumb:**
 
--   Thousands of network connections, new projects → **asyncio**
--   I/O in legacy synchronous code without async libraries → **threading** or `ThreadPoolExecutor`
--   Heavy computation → **multiprocessing** or `ProcessPoolExecutor`
--   Real apps often mix all three: asyncio as the main layer + `run_in_executor` with a thread/process pool for blocking pieces.
+- Thousands of network connections, new projects → **asyncio**
+- I/O in legacy synchronous code without async libraries → **threading** or `ThreadPoolExecutor`
+- Heavy computation → **multiprocessing** or `ProcessPoolExecutor`
+- Real apps often mix all three: asyncio as the main layer + `run_in_executor` with a thread/process pool for blocking pieces.
 
 ## A few pitfalls
 
--   **CPU-bound in asyncio** kills the event loop. Use `run_in_executor` with a `ProcessPoolExecutor` for heavy math inside async code.
--   **Forgotten `await`**: `asyncio.sleep(1)` without `await` does nothing (it creates a coroutine that gets discarded). Modern IDEs highlight this.
--   **Mixing sync/async**: calling `requests.get()` (synchronous) inside asyncio stalls everything. Use `aiohttp` or `httpx` for async HTTP.
--   **`if __name__ == "__main__":`** on Windows and macOS is required for `multiprocessing`; otherwise child processes recursively spawn themselves.
+- **CPU-bound in asyncio** kills the event loop. Use `run_in_executor` with a `ProcessPoolExecutor` for heavy math inside async code.
+- **Forgotten `await`**: `asyncio.sleep(1)` without `await` does nothing (it creates a coroutine that gets discarded). Modern IDEs highlight this.
+- **Mixing sync/async**: calling `requests.get()` (synchronous) inside asyncio stalls everything. Use `aiohttp` or `httpx` for async HTTP.
+- **`if __name__ == "__main__":`** on Windows and macOS is required for `multiprocessing`; otherwise child processes recursively spawn themselves.
 
-## What's next?
-
-That wraps up the concurrency module. The key rule: pick the tool by task type.
-
--   Thousands of network connections → **asyncio**
--   I/O in legacy code → **threading**
--   Math and data crunching → **multiprocessing**
-
-In modern apps the main program tends to be asyncio, with CPU-heavy pieces offloaded into a process pool through `run_in_executor`.
-
----
+## Understanding check
 
 **Which asyncio tool runs blocking code without stalling the event loop?**
 
+1. asyncio.sleep() — asyncio.sleep() is a non-blocking pause; it's already async itself.
+
+2. asyncio.gather() — gather() runs several coroutines concurrently. It doesn't help with blocking SYNCHRONOUS functions — they would still freeze the event loop.
+
+3. **Correct answer:** loop.run_in_executor() — Correct. run_in_executor pushes a blocking function into a separate thread (or process), and the event loop keeps running other coroutines.
+
+4. asyncio.create_task() — create_task() schedules a coroutine on the event loop. It doesn't help with SYNCHRONOUS blocking functions — they would still freeze the loop.
+
+That wraps up the concurrency module. The map from the intro article and the matrix above already answer "which tool"; in practice the main program most often lives on asyncio, handing CPU-heavy pieces to a process pool through `run_in_executor`.

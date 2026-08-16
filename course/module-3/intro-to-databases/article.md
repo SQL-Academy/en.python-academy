@@ -1,110 +1,70 @@
-# Database Fundamentals in Python: What are Databases and Why We Need Them
+---
+meta:
+    title: "What a Database Is and Why You Need One"
+    description: "Why a Python list is not enough for storing application data, what a database and a DBMS are, and the main types of databases."
+---
 
-Every day we use dozens of applications: checking social media,
-shopping online, listening to music, booking tickets.
-Behind each of them is a **database** — a system that instantly finds the right information among millions of records.
+# What a Database Is and Why You Need One
 
-**Databases** are the fundamental technology of modern applications.
-For Python developers, understanding database principles opens doors to creating scalable and reliable solutions.
+Almost any application stores something for the long term: users, orders, messages. The first idea is to keep them in a familiar Python list. Let's see where that idea breaks down.
 
-## What is a Database?
-
-> **Database (DB)** — an organized collection of data that is stored and managed by a specialized system (DBMS).
-
-Simple analogy: a database is like a smart warehouse. Each "shelf" has its own address, and the "warehouse robot" (DBMS) can quickly find and deliver any needed information.
-
-## Why Not Store Data in Python Lists?
-
-Let's consider a simple example — storing users:
+## Why not keep the data in a Python list
 
 ```python
-# Storage in Python list
 users = [
     {"id": 1, "name": "Anna", "email": "anna@example.com"},
-    {"id": 2, "name": "Peter", "email": "peter@example.com"},
+    {"id": 2, "name": "Peter", "email": "petr@example.com"},
     # ... imagine a million users here
 ]
 
-# Search user by email
 def find_user_by_email(email):
-    for user in users:  # Check the ENTIRE list! 😱
+    for user in users:   # scanning the whole list
         if user["email"] == email:
             return user
     return None
 ```
 
-**Problems with this approach:**
+With a thousand users everything works. Then the problems begin:
 
--   **Slow search** — need to check every user
--   **Memory limitations** — all data must fit in RAM
--   **Data loss** — if the program crashes, everything is lost
--   **Concurrency** — what if multiple users modify data simultaneously?
+- **Slow search** — "find by email" walks through the records one by one, and at a million that's a noticeable delay.
+- **Everything in RAM** — the data must fit into memory entirely.
+- **Data lives until restart** — the program exits, and the list is gone.
+- **Concurrent access** — two people change the data at the same moment, and a list isn't ready for that.
 
-**Databases solve all these problems out of the box** — that's why they became the standard for serious applications.
+## What a database is
 
-## Main Types of Databases
+These are exactly the problems a **database** solves: fast search by the field you need, storage on disk between runs, and concurrent access without confusion.
 
-There are many types of databases, but let's highlight the three most important:
+> A **database (DB)** is an organized collection of data managed by a dedicated program — a DBMS (database management system).
 
-### 1. Relational Databases
+A simple analogy: a database is a smart warehouse. Every "shelf" has its own address, and the "warehouse robot" (the DBMS) quickly finds and hands over whatever is needed.
 
-Organize data into **tables** with clear structure. The most popular type.
+## The main types of databases
 
-```sql
--- Example users table
-CREATE TABLE users (
-    id INTEGER PRIMARY KEY,
-    name VARCHAR(100),
-    email VARCHAR(150)
-);
-```
+There are many kinds of databases, but in practice three keep coming up:
 
-### 2. Key-Value Databases
+| Database type     | Description                              |
+| ----------------- | ---------------------------------------- |
+| Relational        | Data in linked tables — rows and columns |
+| Key-value         | Fast access to a value by its key        |
+| Document-oriented | Flexible documents in JSON format        |
 
-Store simple "key-value" pairs. Very fast for simple operations.
+## The most common DBMSs
 
-```python
-# Example in Redis — popular key-value DB
-user_session = {
-    "session:user123": "logged_in",
-    "cart:user123": "[1,5,9]",  # Product IDs in cart
-    "last_seen:user123": "2024-01-15 10:30"
-}
-```
+Relational databases are what you'll encounter most: **PostgreSQL** and **MySQL** on servers, **SQLite** — inside phones, browsers and Python itself. Of the rest, **Redis** (key-value: caches and sessions) and **MongoDB** (documents) come up regularly.
 
-### 3. Document-Oriented Databases
+The next three chapters are about relational databases, so from here on we talk only about them.
 
-Store data as documents (JSON format). Flexible structure.
+## Understanding check
 
-```python
-# Example user document
-{
-    "name": "Anna",
-    "email": "anna@example.com",
-    "preferences": {
-        "theme": "dark",
-        "language": "en"
-    }
-}
-```
+**Why do applications store their users in a database rather than a plain list in memory?**
 
-## Popular Database Management Systems
+1. **Correct answer:** A database searches quickly by the field you need, keeps data between runs, and allows concurrent access — Fast search by the right field instead of scanning the whole list, data that survives a restart, and several clients writing at once without confusion — those are exactly the jobs a database exists for.
 
-Here's the top-8 most used DBMS in 2024:
+2. A database is always faster than any Python code — Speed depends on the task: accessing a single element by index is even faster with an in-memory list. The database wins at searching large volumes, reliability and concurrent access.
 
-1. **PostgreSQL** — powerful **relational** DB
-2. **MySQL** — popular **relational** DB for web
-3. **SQLite** 📱 — lightweight **relational** DB
-4. **MongoDB** — leader in **document-oriented** DBs
-5. **Redis** ⚡ — fast **key-value** DB
-6. **Oracle Database** — enterprise **relational** DB
-7. **Microsoft SQL Server** — **relational** DB from Microsoft
-8. **Elasticsearch** — **document-oriented** search DB
+3. A Python list cannot hold more than 1000 elements — List size is limited only by RAM, not by the number 1000. The problem is not an element limit but search speed and losing data on restart.
 
-**Conclusion:** relational databases (5 out of 8 positions) are the industry standard
-due to their reliability and universality.
+4. With a database you don't need to write code — You still write queries — in SQL or through a library. A database saves you not from code but from manual searching, file-based storage and fighting over concurrent access.
 
-## What's Next?
-
-In the next article, we'll start practicing with **SQLite** — the perfect database for learning, which is already built into Python.
-You'll create your first DB and learn to work with real data.
+In the next article we start practicing with **SQLite** — a database that's ideal for learning and already built into Python: we'll create our first DB and work with real data.

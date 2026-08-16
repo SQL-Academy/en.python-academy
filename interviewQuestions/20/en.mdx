@@ -1,7 +1,7 @@
 ---
 meta:
-    title: 'How to create a custom exception?'
-    description: 'Custom exceptions are created by inheriting from Exception. Learn how and when to create your own exceptions in Python.'
+    title: "How to create a custom exception?"
+    description: "Custom exceptions are created by inheriting from Exception. Learn how and when to create your own exceptions in Python."
 ---
 
 > Custom exceptions are created by inheriting from the `Exception` class (or its subclasses).
@@ -41,9 +41,9 @@ except ValidationError as e:
 
 ## When to create custom exceptions:
 
--   When built-in exceptions don't describe the error accurately enough.
--   To separate business logic errors (e.g., `UserNotFoundError`, `PermissionDeniedError`).
--   To easily catch a group of related errors using a common base class.
+- When built-in exceptions don't describe the error accurately enough.
+- To separate business logic errors (e.g., `UserNotFoundError`, `PermissionDeniedError`).
+- To easily catch a group of related errors using a common base class.
 
 ```python
 class AppError(Exception):

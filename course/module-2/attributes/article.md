@@ -1,84 +1,77 @@
-# Attributes and Methods in Python
+---
+meta:
+    title: "Attributes and Special Methods"
+    description: "How class attributes differ from instance attributes, how to avoid the mutable default value trap, and why you need __str__ and __eq__."
+---
 
-In the previous lesson we saw attributes (`self.name`) and methods (`def greet(self)`). Now let's go deeper: there are also **class attributes** (shared by every instance), methods split into three kinds (regular, class, static), and a classic mutable-default pitfall hiding inside `__init__` that catches even experienced developers.
+# Attributes and Special Methods
 
-## Types of attributes
+In the previous lesson all of an object's data lived in attributes like `self.name` — each object had its own. Today we'll look at data shared by all objects of a class, defuse a classic `__init__` trap, and teach objects to print and compare like proper values.
 
-1. **Instance attributes**: unique to each object.
-2. **Class attributes**: shared by all instances.
+## Instance attributes and class attributes
 
-### Instance attributes
+The attributes that `__init__` creates via `self.name = ...` are called **instance attributes**: each object gets its own value. But some data is the same for everyone. Say all our students go to the same school — storing its name in every object makes no sense: the value is one for all, and if it changes, you'd have to update every object.
 
-> Instance attributes: variables that store data unique to each object. Usually created in `__init__` via `self.name = ...`.
+Such data is declared right in the class body, outside the methods. That's a **class attribute**:
 
-```python-executable
-class Person:
-    def __init__(self, name, age):
-        # Instance attributes
-        self.name = name
-        self.age = age
-
-    def birthday(self):
-        self.age += 1
-        return f"{self.name} is now {self.age} years old!"
-
-# Create two different objects
-person1 = Person("Anna", 25)
-person2 = Person("Ivan", 30)
-
-# Each object has its own attribute values
-print(f"{person1.name}: {person1.age} years old")
-# Output: Anna: 25 years old
-
-# Changing one object's attribute doesn't affect another
-print(person1.birthday())
-# Output: Anna is now 26 years old!
-print(f"{person2.name}: {person2.age} years old")  # Age hasn't changed
-# Output: Ivan: 30 years old
-```
-
-### Class attributes
-
-> Class attributes: variables declared right inside the class body (outside any methods). They are shared by all instances.
-
-```python-executable
+```python
 class Student:
-    # Class attribute: shared by all instances
-    school = "School #1"
+    school = "School No. 1"      # class attribute — one for all
 
     def __init__(self, name):
-        # Instance attribute: one per student
-        self.name = name
+        self.name = name         # instance attribute — each has its own
 
-# Create students
 student1 = Student("Alex")
 student2 = Student("Kate")
 
-# Each has their own name; school is shared
 print(f"{student1.name}, {student1.school}")
-# Output: Alex, School #1
-
-# Change the class attribute: every instance sees it immediately
-Student.school = "Gymnasium #5"
-print(f"{student1.name}, {student1.school}")
-# Output: Alex, Gymnasium #5
+<output>
+Alex, School No. 1
+</output>
 print(f"{student2.name}, {student2.school}")
-# Output: Kate, Gymnasium #5
+<output>
+Kate, School No. 1
+</output>
 ```
 
-### When to use which
+Notice: `student1.school` reads fine even though the object itself has no such attribute. When Python doesn't find the name in the instance, it looks it up in the class. So changing the class attribute is enough — all objects see the change at once:
 
--   **Instance attributes**: for data that varies between objects (name, age, id).
--   **Class attributes**: for:
-    -   Constants and default values;
-    -   Data shared by every instance (e.g. the school name across all students);
-    -   Class-level counters (e.g. how many objects have been created).
+```python
+class Student:
+    school = "School No. 1"
 
-## The mutable-default pitfall
+    def __init__(self, name):
+        self.name = name
 
-A classic Python trap that catches even seasoned developers. Suppose we want a student to start with an empty list of grades. It seems natural to write:
+student1 = Student("Alex")
+student2 = Student("Kate")
 
-```python-executable
+Student.school = "School No. 5"
+
+print(f"{student1.name}, {student1.school}")
+<output>
+Alex, School No. 5
+</output>
+print(f"{student2.name}, {student2.school}")
+<output>
+Kate, School No. 5
+</output>
+```
+
+`class Student`: `school = "School No. 1"`
+
+- `student1`: `name = "Alex"`, `school` — from the class
+- `student2`: `name = "Kate"`, `school` — from the class
+
+`name` — each object has its own, while `school` lives in the class: one for all.
+
+The rule of thumb is simple: whatever differs between objects goes into instance attributes (name, age), and whatever is one for all goes into class attributes (constants, shared settings, default values).
+
+## The mutable default value trap
+
+This `__init__` trap catches even experienced developers. Say we want a student to have an empty list of grades by default. It seems logical to write this:
+
+```python
 class Student:
     def __init__(self, name, grades=[]):   # looks harmless
         self.name = name
@@ -87,186 +80,141 @@ class Student:
 s1 = Student("Anna")
 s1.grades.append(5)
 print(s1.grades)
-# Output: [5]
+<output>
+[5]
+</output>
 
 s2 = Student("Ivan")
-print(s2.grades)   # we expect []
-# Output: [5]
+print(s2.grades)   # expecting []
+<output>
+[5]
+</output>
 ```
 
-Ivan inherited Anna's grade even though we never added anything to his list. Why?
+Ivan ended up with Anna's grade, even though we added nothing to him. Why?
 
-Default parameter values are evaluated **once**, when the function is defined, not on every call. The list `[]` is created once and reused by every call to `Student(...)` that doesn't pass a `grades` argument. So `s1.grades` and `s2.grades` point to **the same** list in memory.
+Default parameter values are evaluated **once**, at the moment the function is defined — not on every call. The list `[]` was created once and is reused by every `Student(...)` call without a `grades` argument. In other words, `s1.grades` and `s2.grades` point to **the very same** list in memory.
 
-The fix: default to `None`, and create the real list inside:
+The correct pattern: use `None` as the default — the technique you know from the previous lesson — and create the real list inside:
 
-```python-executable
+```python
 class Student:
     def __init__(self, name, grades=None):
         self.name = name
-        self.grades = grades if grades is not None else []
+        if grades is None:
+            grades = []
+        self.grades = grades
 
 s1 = Student("Anna")
 s1.grades.append(5)
 print(s1.grades)
-# Output: [5]
+<output>
+[5]
+</output>
 
 s2 = Student("Ivan")
 print(s2.grades)
-# Output: []
+<output>
+[]
+</output>
 ```
 
-Now each object gets its own fresh list. The same trick works for dicts, sets, and any other mutable default.
+Now every object gets its own empty list. The same trick works for dictionaries, sets and any other mutable values.
 
-## Types of methods
+## Special methods
 
-In Python there are several kinds of methods:
+The data is neatly stored in attributes — now let's see how the object behaves in everyday operations. Print it and compare two identical ones:
 
-1. **Regular methods** (instance methods): work with a specific object via `self`.
-2. **Class methods**: work with the class as a whole, receive `cls`.
-3. **Static methods**: receive neither `self` nor `cls`.
-4. **Special methods**: have special meaning to Python (e.g. `__init__`, `__str__`).
-
-### Regular methods
-
-> Regular methods: functions inside a class that take `self` as their first parameter. Through `self` they access the object's attributes and call other methods.
-
-```python-executable
-class Rectangle:
-    def __init__(self, width, height):
-        self.width = width
-        self.height = height
-
-    def area(self):
-        return self.width * self.height
-
-    def perimeter(self):
-        return 2 * (self.width + self.height)
-
-# Create a rectangle and call methods
-rect = Rectangle(5, 3)
-print(f"Area: {rect.area()}")
-# Output: Area: 15
-print(f"Perimeter: {rect.perimeter()}")
-# Output: Perimeter: 16
-```
-
-### Class methods
-
-> Class methods: take the class itself as the first parameter (usually called `cls`), not an instance. Decorated with `@classmethod`. Often used as alternative constructors.
-
-```python-executable
-class Date:
-    def __init__(self, day, month, year):
-        self.day = day
-        self.month = month
-        self.year = year
-
-    def display(self):
-        return f"{self.day:02d}.{self.month:02d}.{self.year}"
-
-    # Class method: alternative constructor
-    @classmethod
-    def from_string(cls, date_string):
-        day, month, year = map(int, date_string.split('.'))
-        return cls(day, month, year)
-
-# Create the standard way
-date1 = Date(15, 6, 2023)
-print(date1.display())
-# Output: 15.06.2023
-
-# Create using a class method
-date2 = Date.from_string("25.12.2023")
-print(date2.display())
-# Output: 25.12.2023
-```
-
-### Static methods
-
-> Static methods: take neither `self` nor `cls`. Decorated with `@staticmethod`. Used for utility functions logically related to a class but not needing access to its state.
-
-```python-executable
-class MathUtils:
-    @staticmethod
-    def is_prime(number):
-        """Checks if a number is prime"""
-        if number < 2:
-            return False
-        for i in range(2, int(number**0.5) + 1):
-            if number % i == 0:
-                return False
-        return True
-
-# Call a static method through the class name
-print(f"Is 7 a prime number: {MathUtils.is_prime(7)}")
-# Output: Is 7 a prime number: True
-print(f"Is 10 a prime number: {MathUtils.is_prime(10)}")
-# Output: Is 10 a prime number: False
-```
-
-### Special methods
-
-> Special methods: methods whose names start and end with double underscores (`__init__`, `__str__`, `__add__`, `__eq__`). Python calls them automatically for specific operations: creating an object, printing, addition, comparison.
-
-```python-executable
+```python
 class Vector:
     def __init__(self, x, y):
         self.x = x
         self.y = y
 
-    # String representation: called by print() and str()
+v1 = Vector(3, 4)
+v3 = Vector(3, 4)
+
+print(v1)
+<output>
+<__main__.Vector object at 0x7f9b1c2d3e50>
+</output>
+print(v1 == v3)
+<output>
+False
+</output>
+```
+
+Printing produced the object's memory address instead of its contents, and the comparison answered `False` despite equal coordinates: without our help, Python compares objects by whether they are the same object in memory, not by content.
+
+Both problems are solved with **special methods** — methods with double underscores in the name that Python calls itself at the right moment:
+
+- `__init__` you already write in every class: it fires on `Student(...)`;
+- `__str__` fires when the object needs to become a string — inside `print()`, for example;
+- `__eq__` — on comparison with `==`;
+- `__add__` — on addition with `+`.
+
+Let's define the three new ones in `Vector`:
+
+```python
+class Vector:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
     def __str__(self):
         return f"Vector({self.x}, {self.y})"
 
-    # Overload + operator
     def __add__(self, other):
         return Vector(self.x + other.x, self.y + other.y)
 
-    # Overload == operator
     def __eq__(self, other):
         return self.x == other.x and self.y == other.y
 
-# Create vectors and use the overloaded operators
 v1 = Vector(3, 4)
 v2 = Vector(1, 2)
 v3 = Vector(3, 4)
 
-print(f"v1 = {v1}")          # calls __str__
-# Output: v1 = Vector(3, 4)
-print(f"v1 + v2 = {v1 + v2}")  # calls __add__
-# Output: v1 + v2 = Vector(4, 6)
-print(v1 == v2)              # calls __eq__
-# Output: False
-print(v1 == v3)              # calls __eq__
-# Output: True
+print(v1)
+<output>
+Vector(3, 4)
+</output>
+print(v1 + v2)
+<output>
+Vector(4, 6)
+</output>
+print(v1 == v3)
+<output>
+True
+</output>
 ```
 
-Without `__eq__`, comparing `v1 == v3` would have returned `False` even though their coordinates match: by default Python compares objects by identity (are they the same object in memory?), not by content. Defining `__eq__` lets us say: "treat these objects as equal when their coordinates match."
+Note `__add__`: it doesn't change the original vectors — it builds a new object out of their coordinates and returns it.
 
-## Commonly used special methods
+Python has dozens of special methods: `__len__` teaches an object to answer `len(...)`, `__repr__` — to show itself while debugging. No need to memorize the list — they'll come up throughout the course as needed.
 
-Here are some of the most commonly used special methods in Python:
+## Understanding check
 
-| Method                          | Description                          | Usage Example      |
-| ------------------------------- | ------------------------------------ | ------------------ |
-| `__init__(self, ...)`           | Constructor                          | `obj = MyClass()`  |
-| `__str__(self)`                 | String representation for users      | `print(obj)`       |
-| `__repr__(self)`                | String representation for developers | `repr(obj)`        |
-| `__len__(self)`                 | Object length                        | `len(obj)`         |
-| `__getitem__(self, key)`        | Access by key/index                  | `obj[key]`         |
-| `__setitem__(self, key, value)` | Assignment by key/index              | `obj[key] = value` |
-| `__call__(self, ...)`           | Calling an object as a function      | `obj()`            |
-| `__add__(self, other)`          | + operator                           | `obj + other`      |
-| `__sub__(self, other)`          | - operator                           | `obj - other`      |
-| `__eq__(self, other)`           | == operator                          | `obj == other`     |
-| `__lt__(self, other)`           | < operator                           | `obj < other`      |
+**The program created two students. What does the last line print?**
 
-## What's next?
+```python
+class Student:
+    def __init__(self, name, grades=[]):
+        self.name = name
+        self.grades = grades
 
-In the next lessons we'll go through the four principles of OOP one at a time. Starting with inheritance: how one class extends another, reusing its attributes and methods.
+s1 = Student("Anna")
+s1.grades.append(5)
 
----
+s2 = Student("Ivan")
+print(s2.grades)
+```
 
-**Which decorator is used to create class methods in Python?**
+1. \[] — The default list is not created on every call — it is created once: s2 got the very list that 5 was already appended to.
 
+2. **Correct answer:** \[5] — The default value was evaluated once when \_\_init\_\_ was defined, so s1.grades and s2.grades are the same list.
+
+3. An error: s2 has no grades attribute. — The attribute exists: \_\_init\_\_ stored the default list into self.grades.
+
+4. \[5, 5] — The 5 was appended once, so the list holds a single value — even though the list is shared.
+
+In the next lesson we'll look at inheritance: how one class continues another, reusing its attributes and methods.
